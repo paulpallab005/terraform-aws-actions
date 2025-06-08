@@ -37,19 +37,22 @@ jobs:
           echo "Changed files:"
           echo "$changed_files"
 
-          dir_paths=$(echo "$changed_files" \
-            | xargs -n1 dirname \
-            | grep '^terraform/.*/.*/.*/.*' \
-            | sort -u)
+          if [ -z "$changed_files" ]; then
+            echo "No terraform files changed."
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+            echo "has_items=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' \
-            | jq -R -s -c 'split("\n") | map(select(. != "")) 
-                | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
+          dir_paths=$(echo "$changed_files" | xargs -n1 dirname | grep '^terraform/.*/.*/.*/.*' | sort -u)
+
+          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' | jq -R -s -c 'split("\n") | map(select(. != "")) | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
           has_items=$(echo "$matrix" | jq 'length > 0')
           echo "has_items=$has_items" >> $GITHUB_OUTPUT
+
 
 
   plan-push:
