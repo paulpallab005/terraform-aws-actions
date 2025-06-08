@@ -59,6 +59,10 @@ jobs:
   plan-dispatch:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    outputs:                                   # <-- Define job-level outputs
+      app_name: ${{ steps.parse.outputs.app_name }}
+      aws_region: ${{ steps.parse.outputs.aws_region }}
+      app_env: ${{ steps.parse.outputs.app_env }}
     steps:
       - uses: actions/checkout@v4
       - name: Parse path input
