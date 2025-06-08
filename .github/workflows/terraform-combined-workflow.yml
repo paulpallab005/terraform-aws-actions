@@ -31,13 +31,19 @@ jobs:
           echo "Changed files:"
           echo "$changed_files"
 
-          unique_paths=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' \
-            | cut -d'/' -f2-4 \
-            | sort -u \
-            | jq -R -s -c 'split("\n") | map(select(. != "")) | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2]})')
+          # Extract directory paths like terraform/app1/us-east-1/stage/ec2
+          dir_paths=$(echo "$changed_files" \
+            | xargs -n1 dirname \
+            | grep '^terraform/.*/.*/.*/.*' \
+            | sort -u)
 
-          echo "matrix=$unique_paths" >> $GITHUB_OUTPUT
-          echo "Matrix JSON: $unique_paths"
+          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' \
+            | jq -R -s -c 'split("\n") | map(select(. != "")) 
+                | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
+
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Matrix JSON: $matrix"
+
 
   plan-push:
     if: ${{ github.event_name == 'push' }}
@@ -57,6 +63,7 @@ jobs:
           aws_region: ${{ matrix.aws_region }}
           app_env: ${{ matrix.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
+          dir_path: ${{ matrix.dir_path }}
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -65,6 +72,7 @@ jobs:
       app_name: ${{ steps.parse.outputs.app_name }}
       aws_region: ${{ steps.parse.outputs.aws_region }}
       app_env: ${{ steps.parse.outputs.app_env }}
+      dir_path: ${{ steps.parse.outputs.dir_path }}
     steps:
       - uses: actions/checkout@v4
 
@@ -102,4 +110,5 @@ jobs:
           aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
+          dir_path: ${{ needs.fetch-dispatch-details.outputs.dir_path }}
             
