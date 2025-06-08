@@ -10,7 +10,7 @@ inputs:
     required: true
   aws_acc_id: 
     required: true
-  dir_path:
+  component:
     required: true
 
 runs:
@@ -26,7 +26,7 @@ runs:
 
     - name: Terraform Init and Plan
       run: |
-        cd ${{ inputs.dir_path }}
+        cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
         # terraform init -input=false
         # terraform plan -input=false
         ls -lrt

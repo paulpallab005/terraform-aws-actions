@@ -63,7 +63,7 @@ jobs:
           aws_region: ${{ matrix.aws_region }}
           app_env: ${{ matrix.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
-          dir_path: ${{ matrix.dir_path }}
+          component: ${{ matrix.component }}
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -72,7 +72,7 @@ jobs:
       app_name: ${{ steps.parse.outputs.app_name }}
       aws_region: ${{ steps.parse.outputs.aws_region }}
       app_env: ${{ steps.parse.outputs.app_env }}
-      dir_path: ${{ steps.parse.outputs.dir_path }}
+      component: ${{ steps.parse.outputs.component }}
     steps:
       - uses: actions/checkout@v4
 
@@ -92,9 +92,11 @@ jobs:
           app_name=$(echo "$relative_path" | cut -d'/' -f2)
           region=$(echo "$relative_path" | cut -d'/' -f3)
           env=$(echo "$relative_path" | cut -d'/' -f4)
+          component=$(echo "$relative_path" | cut -d'/' -f5)
           echo "app_name=$app_name" >> $GITHUB_OUTPUT
           echo "aws_region=$region" >> $GITHUB_OUTPUT
           echo "app_env=$env" >> $GITHUB_OUTPUT
+          echo "component=$component" >> $GITHUB_OUTPUT
 
   plan-dispatch:
     needs: fetch-dispatch-details
@@ -110,5 +112,5 @@ jobs:
           aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
-          dir_path: ${{ needs.fetch-dispatch-details.outputs.dir_path }}
+          component: ${{ needs.fetch-dispatch-details.outputs.component }}
             
