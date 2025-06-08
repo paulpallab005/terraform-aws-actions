@@ -28,5 +28,5 @@ runs:
         # terraform init -input=false
         # terraform plan -input=false
         ls -lrt
-        echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
+        echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ env.AWS_ACC_ID }}
       shell: bash

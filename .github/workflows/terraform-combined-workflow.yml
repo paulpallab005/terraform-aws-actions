@@ -56,7 +56,6 @@ jobs:
           app_name: ${{ matrix.app_name }}
           aws_region: ${{ matrix.aws_region }}
           app_env: ${{ matrix.app_env }}
-          aws_acc_id: ${{ env.AWS_ACC_ID }}
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -101,5 +100,4 @@ jobs:
           app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
           aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
-          aws_acc_id: ${{ env.AWS_ACC_ID }}
             
