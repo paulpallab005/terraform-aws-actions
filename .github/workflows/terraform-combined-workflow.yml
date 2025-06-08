@@ -47,6 +47,8 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.detect-paths.outputs.matrix) }}
     steps:
+
+      - uses: actions/checkout@v4 
       - name: Run Terraform Plan for push
         uses: ./.github/actions/terraform-plan
         with:
@@ -58,6 +60,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Parse path input
         id: parse
         run: |

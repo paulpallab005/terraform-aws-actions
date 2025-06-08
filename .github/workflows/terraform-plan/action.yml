@@ -14,15 +14,16 @@ runs:
   steps:
     - uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        role-to-assume: arn:aws:iam::123456789012:role/TerraformPlanRole
-        aws-region: ${{ inputs.aws_region }}
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v3
+    #   with:
+    #     role-to-assume: arn:aws:iam::123456789012:role/TerraformPlanRole
+    #     aws-region: ${{ inputs.aws_region }}
 
     - name: Terraform Init and Plan
       run: |
-        cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}
-        terraform init -input=false
-        terraform plan -input=false
+        # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}
+        # terraform init -input=false
+        # terraform plan -input=false
+        echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }}
       shell: bash
