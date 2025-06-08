@@ -16,50 +16,37 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      has_items: ${{ steps.set-matrix.outputs.has_items }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch base branch (full fetch)
-        run: git fetch origin main
-
-      - name: Show current branch
-        run: git branch
+      - name: Fetch previous commit
+        run: git fetch --depth=2
 
       - name: Generate matrix from changed files
         id: set-matrix
         run: |
-          if ! base_sha=$(git rev-parse HEAD^ 2>/dev/null); then
-            echo "No parent commit found, using HEAD as base_sha"
-            base_sha=$(git rev-parse HEAD)
-          fi
-
-          echo "Base SHA: $base_sha"
-
+          base_sha=$(git rev-parse HEAD^ || git rev-parse HEAD)
           changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
 
           echo "Changed files:"
           echo "$changed_files"
 
-          if [ -z "$changed_files" ]; then
-            echo "No terraform files changed."
-            echo "matrix=[]" >> $GITHUB_OUTPUT
-            echo "has_items=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          # Extract directory paths like terraform/app1/us-east-1/stage/ec2
+          dir_paths=$(echo "$changed_files" \
+            | xargs -n1 dirname \
+            | grep '^terraform/.*/.*/.*/.*' \
+            | sort -u)
 
-          dir_paths=$(echo "$changed_files" | xargs -n1 dirname | grep '^terraform/.*/.*/.*/.*' | sort -u)
-
-          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' | jq -R -s -c 'split("\n") | map(select(. != "")) | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
+          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' \
+            | jq -R -s -c 'split("\n") | map(select(. != "")) 
+                | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
-
-          has_items=$(echo "$matrix" | jq 'length > 0')
-          echo "has_items=$has_items" >> $GITHUB_OUTPUT
+          echo "Matrix JSON: $matrix"
 
 
   plan-push:
-    if: ${{ github.event_name == 'push' && needs.fetch-push-details.outputs.has_items == 'true' }}
+    if: ${{ github.event_name == 'push' }}
     needs: fetch-push-details
     runs-on: ubuntu-latest
     strategy:
@@ -67,7 +54,8 @@ jobs:
         include: ${{ fromJson(needs.fetch-push-details.outputs.matrix) }} 
     environment: ${{ matrix.app_env }}
     steps:
-      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4 
       - name: Run Terraform Plan for push
         uses: ./.github/actions/terraform-plan
         with:
@@ -76,7 +64,6 @@ jobs:
           app_env: ${{ matrix.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ matrix.component }}
-
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -111,7 +98,6 @@ jobs:
           echo "app_env=$env" >> $GITHUB_OUTPUT
           echo "component=$component" >> $GITHUB_OUTPUT
 
-
   plan-dispatch:
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
@@ -127,3 +113,4 @@ jobs:
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ needs.fetch-dispatch-details.outputs.component }}
+            
