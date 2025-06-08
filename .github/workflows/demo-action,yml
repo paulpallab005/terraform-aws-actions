@@ -1,0 +1,48 @@
+name: Terraform Workflow
+
+on:
+  push:
+    paths:
+      - 'terraform/**'
+
+jobs:
+  extract-details:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed
+        run: |
+          echo "##[group]Detecting changed files in terraform/"
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^terraform/' || true)
+          echo "$changed_files"
+          if [ -z "$changed_files" ]; then
+            echo "No changes in terraform/ detected."
+            exit 0
+          fi
+          first_tf_file=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' | head -n 1)
+          echo "file=$first_tf_file" >> $GITHUB_OUTPUT
+          echo "##[endgroup]"
+
+      - name: Extract path details
+        if: steps.changed.outputs.file != ''
+        id: extract
+        run: |
+          path="${{ steps.changed.outputs.file }}"
+          echo "Changed file path: $path"
+          app_name=$(echo "$path" | cut -d'/' -f2)
+          aws_region=$(echo "$path" | cut -d'/' -f3)
+          app_env=$(echo "$path" | cut -d'/' -f4)
+
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "aws_region=$aws_region" >> $GITHUB_OUTPUT
+          echo "app_env=$app_env" >> $GITHUB_OUTPUT
+
+      - name: Show extracted details
+        if: steps.extract.outputs.app_name != ''
+        run: |
+          echo "App Name: ${{ steps.extract.outputs.app_name }}"
+          echo "AWS Region: ${{ steps.extract.outputs.aws_region }}"
+          echo "App Environment: ${{ steps.extract.outputs.app_env }}"
