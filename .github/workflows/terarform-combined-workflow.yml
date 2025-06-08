@@ -1,0 +1,75 @@
+name: Terraform Plan Dispatcher
+
+on:
+  push:
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      path:
+        description: 'Terraform path (e.g., terraform/app1/us-east-1/stage)'
+        required: true
+
+jobs:
+  detect-paths:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch previous commit
+        run: git fetch --depth=2
+
+      - name: Generate matrix from changed files
+        id: set-matrix
+        run: |
+          base_sha=$(git rev-parse HEAD^ || git rev-parse HEAD)
+          changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
+
+          echo "Changed files:"
+          echo "$changed_files"
+
+          unique_paths=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' \
+            | cut -d'/' -f2-4 \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(. != "")) | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2]})')
+
+          echo "matrix=$unique_paths" >> $GITHUB_OUTPUT
+          echo "Matrix JSON: $unique_paths"
+
+  plan-push:
+    if: ${{ github.event_name == 'push' }}
+    needs: detect-paths
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.detect-paths.outputs.matrix) }}
+    steps:
+      - name: Run Terraform Plan for push
+        uses: ./.github/actions/terraform-plan
+        with:
+          app_name: ${{ matrix.app_name }}
+          aws_region: ${{ matrix.aws_region }}
+          app_env: ${{ matrix.app_env }}
+
+  plan-dispatch:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse path input
+        id: parse
+        run: |
+          IFS='/' read -r _ app_name aws_region app_env <<< "${{ github.event.inputs.path }}"
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "aws_region=$aws_region" >> $GITHUB_OUTPUT
+          echo "app_env=$app_env" >> $GITHUB_OUTPUT
+
+      - name: Run Terraform Plan for dispatch
+        uses: ./.github/actions/terraform-plan
+        with:
+          app_name: ${{ steps.parse.outputs.app_name }}
+          aws_region: ${{ steps.parse.outputs.aws_region }}
+          app_env: ${{ steps.parse.outputs.app_env }}
+            
