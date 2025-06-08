@@ -86,16 +86,16 @@ jobs:
           echo "aws_region=$region" >> $GITHUB_OUTPUT
           echo "app_env=$env" >> $GITHUB_OUTPUT
 
-    plan-dispatch:
-    needs: fetch-dispatch-details
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  plan-dispatch:
+  needs: fetch-dispatch-details
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Run Terraform Plan for dispatch
-        uses: ./.github/actions/terraform-plan
-        with:
-          app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
-          aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
-          app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
+    - name: Run Terraform Plan for dispatch
+      uses: ./.github/actions/terraform-plan
+      with:
+        app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
+        aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
+        app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
             
