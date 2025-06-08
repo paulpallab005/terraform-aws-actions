@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include: ${{ fromJson(needs.detect-paths.outputs.matrix) }}
+        include: ${{ fromJson(needs.fetch-push-details.outputs.matrix) }}
     steps:
 
       - uses: actions/checkout@v4 
