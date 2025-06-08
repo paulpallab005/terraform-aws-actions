@@ -11,63 +11,62 @@ on:
         required: true
 
 jobs:
-    fetch-push-details:
-      if: ${{ github.event_name == 'push' }}
-      runs-on: ubuntu-latest
-      outputs:
-        matrix: ${{ steps.set-matrix.outputs.matrix }}
-        has_items: ${{ steps.set-matrix.outputs.has_items }}
-      steps:
-        - uses: actions/checkout@v4
+  fetch-push-details:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_items: ${{ steps.set-matrix.outputs.has_items }}
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Fetch base branch
-          run: git fetch origin main --depth=2
+      - name: Fetch base branch
+        run: git fetch origin main --depth=2
 
-        - name: Generate matrix from changed files
-          id: set-matrix
-          run: |
-            base_sha=$(git merge-base HEAD origin/main)
-            echo "Base SHA: $base_sha"
+      - name: Generate matrix from changed files
+        id: set-matrix
+        run: |
+          base_sha=$(git merge-base HEAD origin/main)
+          echo "Base SHA: $base_sha"
 
-            changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
+          changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
 
-            echo "Changed files:"
-            echo "$changed_files"
+          echo "Changed files:"
+          echo "$changed_files"
 
-            dir_paths=$(echo "$changed_files" \
-              | xargs -n1 dirname \
-              | grep '^terraform/.*/.*/.*/.*' \
-              | sort -u)
+          dir_paths=$(echo "$changed_files" \
+            | xargs -n1 dirname \
+            | grep '^terraform/.*/.*/.*/.*' \
+            | sort -u)
 
-            matrix=$(echo "$dir_paths" | sed 's|^terraform/||' \
-              | jq -R -s -c 'split("\n") | map(select(. != "")) 
-                  | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
+          matrix=$(echo "$dir_paths" | sed 's|^terraform/||' \
+            | jq -R -s -c 'split("\n") | map(select(. != "")) 
+                | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2], component: .[3]})')
 
-            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
-            has_items=$(echo "$matrix" | jq 'length > 0')
-            echo "has_items=$has_items" >> $GITHUB_OUTPUT
+          has_items=$(echo "$matrix" | jq 'length > 0')
+          echo "has_items=$has_items" >> $GITHUB_OUTPUT
 
 
-
-    plan-push:
-      if: ${{ github.event_name == 'push' && needs.fetch-push-details.outputs.has_items == 'true' }}
-      needs: fetch-push-details
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          include: ${{ fromJson(needs.fetch-push-details.outputs.matrix) }} 
-      environment: ${{ matrix.app_env }}
-      steps:
-        - uses: actions/checkout@v4
-        - name: Run Terraform Plan for push
-          uses: ./.github/actions/terraform-plan
-          with:
-            app_name: ${{ matrix.app_name }}
-            aws_region: ${{ matrix.aws_region }}
-            app_env: ${{ matrix.app_env }}
-            aws_acc_id: ${{ vars.AWS_ACC_ID }}
-            component: ${{ matrix.component }}
+  plan-push:
+    if: ${{ github.event_name == 'push' && needs.fetch-push-details.outputs.has_items == 'true' }}
+    needs: fetch-push-details
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.fetch-push-details.outputs.matrix) }} 
+    environment: ${{ matrix.app_env }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Terraform Plan for push
+        uses: ./.github/actions/terraform-plan
+        with:
+          app_name: ${{ matrix.app_name }}
+          aws_region: ${{ matrix.aws_region }}
+          app_env: ${{ matrix.app_env }}
+          aws_acc_id: ${{ vars.AWS_ACC_ID }}
+          component: ${{ matrix.component }}
 
 
   fetch-dispatch-details:
@@ -103,6 +102,7 @@ jobs:
           echo "app_env=$env" >> $GITHUB_OUTPUT
           echo "component=$component" >> $GITHUB_OUTPUT
 
+
   plan-dispatch:
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
@@ -118,4 +118,3 @@ jobs:
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ needs.fetch-dispatch-details.outputs.component }}
-            
