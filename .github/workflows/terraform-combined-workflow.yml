@@ -19,19 +19,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch previous commit
-        run: git fetch --depth=2
+      - name: Ensure we have two commits
+        run: git fetch --deepen=2
 
       - name: Generate matrix from changed files
         id: set-matrix
         run: |
-          base_sha=$(git rev-parse HEAD^ || git rev-parse HEAD)
-          changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
+          echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+
+          # Get last two commits on current branch
+          commits=($(git log --format="%H" -n 2))
+          if [ "${#commits[@]}" -lt 2 ]; then
+            echo "Not enough commits to compare."
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          latest_commit=${commits[0]}
+          previous_commit=${commits[1]}
+
+          echo "Comparing: $previous_commit..$latest_commit"
+
+          changed_files=$(git diff --name-only "$previous_commit" "$latest_commit" | grep '^terraform/' || true)
 
           echo "Changed files:"
           echo "$changed_files"
 
-          # Extract directory paths like terraform/app1/us-east-1/stage/ec2
+          if [ -z "$changed_files" ]; then
+            echo "No terraform files changed."
+            echo "matrix=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           dir_paths=$(echo "$changed_files" \
             | xargs -n1 dirname \
             | grep '^terraform/.*/.*/.*/.*' \
@@ -43,7 +62,6 @@ jobs:
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
           echo "Matrix JSON: $matrix"
-
 
   plan-push:
     if: ${{ github.event_name == 'push' }}
