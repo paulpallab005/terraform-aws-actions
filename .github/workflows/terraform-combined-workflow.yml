@@ -29,7 +29,11 @@ jobs:
       - name: Generate matrix from changed files
         id: set-matrix
         run: |
-          base_sha=$(git rev-parse HEAD^)
+          if ! base_sha=$(git rev-parse HEAD^ 2>/dev/null); then
+            echo "No parent commit found, using HEAD as base_sha"
+            base_sha=$(git rev-parse HEAD)
+          fi
+
           echo "Base SHA: $base_sha"
 
           changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
@@ -52,6 +56,7 @@ jobs:
 
           has_items=$(echo "$matrix" | jq 'length > 0')
           echo "has_items=$has_items" >> $GITHUB_OUTPUT
+
 
   plan-push:
     if: ${{ github.event_name == 'push' && needs.fetch-push-details.outputs.has_items == 'true' }}
