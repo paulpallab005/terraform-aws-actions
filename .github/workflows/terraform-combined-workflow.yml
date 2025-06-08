@@ -20,8 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch base branch
-        run: git fetch origin main --depth=2
+      - name: Fetch base branch (full fetch)
+        run: git fetch origin main
+
+      - name: Show current branch
+        run: git branch
 
       - name: Generate matrix from changed files
         id: set-matrix
