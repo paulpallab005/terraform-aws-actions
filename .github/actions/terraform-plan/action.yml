@@ -25,5 +25,6 @@ runs:
         # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}
         # terraform init -input=false
         # terraform plan -input=false
+        ls -lrt
         echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }}
       shell: bash

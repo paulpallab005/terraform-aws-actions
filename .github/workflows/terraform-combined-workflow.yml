@@ -56,27 +56,46 @@ jobs:
           aws_region: ${{ matrix.aws_region }}
           app_env: ${{ matrix.app_env }}
 
-  plan-dispatch:
+  fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    outputs:                                   # <-- Define job-level outputs
+    outputs:
       app_name: ${{ steps.parse.outputs.app_name }}
       aws_region: ${{ steps.parse.outputs.aws_region }}
       app_env: ${{ steps.parse.outputs.app_env }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Parse path input
         id: parse
         run: |
-          IFS='/' read -r _ app_name aws_region app_env <<< "${{ github.event.inputs.path }}"
+          # Check if the path ends with a .tf file
+          if [[ "${{ inputs.path }}" == *.tf ]]; then
+            relative_path=$(dirname "${{ inputs.path }}")
+            echo "dir_path=$relative_path" >> $GITHUB_OUTPUT
+          else
+            relative_path="${{ inputs.path }}"
+            echo "dir_path=$relative_path" >> $GITHUB_OUTPUT
+          fi
+
+          #fetch region and environemnt
+          app_name=$(echo "$relative_path" | cut -d'/' -f2)
+          region=$(echo "$relative_path" | cut -d'/' -f3)
+          env=$(echo "$relative_path" | cut -d'/' -f4)
           echo "app_name=$app_name" >> $GITHUB_OUTPUT
-          echo "aws_region=$aws_region" >> $GITHUB_OUTPUT
-          echo "app_env=$app_env" >> $GITHUB_OUTPUT
+          echo "aws_region=$region" >> $GITHUB_OUTPUT
+          echo "app_env=$env" >> $GITHUB_OUTPUT
+
+    plan-dispatch:
+    needs: fetch-dispatch-details
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Run Terraform Plan for dispatch
         uses: ./.github/actions/terraform-plan
         with:
-          app_name: ${{ steps.parse.outputs.app_name }}
-          aws_region: ${{ steps.parse.outputs.aws_region }}
-          app_env: ${{ steps.parse.outputs.app_env }}
+          app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
+          aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
+          app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
             
