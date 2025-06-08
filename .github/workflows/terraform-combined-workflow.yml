@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  detect-paths:
+  fetch-push-details:
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     outputs:
@@ -41,7 +41,7 @@ jobs:
 
   plan-push:
     if: ${{ github.event_name == 'push' }}
-    needs: detect-paths
+    needs: fetch-push-details
     runs-on: ubuntu-latest
     strategy:
       matrix:
