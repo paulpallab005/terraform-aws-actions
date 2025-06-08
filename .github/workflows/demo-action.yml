@@ -1,4 +1,4 @@
-name: Terraform Workflow
+name: Terraform Multi-Env Workflow
 
 on:
   push:
@@ -6,45 +6,47 @@ on:
       - 'terraform/**'
 
 jobs:
-  extract-details:
+  find-changes:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get changed files
-        id: changed
+      - name: Fetch previous commit (safe fallback)
         run: |
           git fetch --depth=2 origin ${{ github.ref }}
+
+      - name: Detect all changed Terraform envs
+        id: set-matrix
+        run: |
           base_sha=$(git rev-parse HEAD^ || git rev-parse HEAD)
-          echo "Base SHA: $base_sha"
           changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
+
+          echo "Changed files:"
           echo "$changed_files"
-          if [ -z "$changed_files" ]; then
-            echo "No changes in terraform/ detected."
-            exit 0
-          fi
-          first_tf_file=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' | head -n 1)
-          echo "file=$first_tf_file" >> $GITHUB_OUTPUT
-      
 
-      - name: Extract path details
-        if: steps.changed.outputs.file != ''
-        id: extract
+          unique_paths=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' \
+            | cut -d'/' -f2-4 \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(. != "")) | map(split("/") | {app_name: .[0], aws_region: .[1], app_env: .[2]})')
+
+          echo "matrix=$unique_paths" >> $GITHUB_OUTPUT
+          echo "Matrix JSON: $unique_paths"
+
+  terraform-plan:
+    needs: find-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.find-changes.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Debug Info
         run: |
-          path="${{ steps.changed.outputs.file }}"
-          echo "Changed file path: $path"
-          app_name=$(echo "$path" | cut -d'/' -f2)
-          aws_region=$(echo "$path" | cut -d'/' -f3)
-          app_env=$(echo "$path" | cut -d'/' -f4)
-
-          echo "app_name=$app_name" >> $GITHUB_OUTPUT
-          echo "aws_region=$aws_region" >> $GITHUB_OUTPUT
-          echo "app_env=$app_env" >> $GITHUB_OUTPUT
-
-      - name: Show extracted details
-        if: steps.extract.outputs.app_name != ''
-        run: |
-          echo "App Name: ${{ steps.extract.outputs.app_name }}"
-          echo "AWS Region: ${{ steps.extract.outputs.aws_region }}"
-          echo "App Environment: ${{ steps.extract.outputs.app_env }}"
+          echo "App: ${{ matrix.app_name }}"
+          echo "Region: ${{ matrix.aws_region }}"
+          echo "Env: ${{ matrix.app_env }}"
