@@ -15,8 +15,10 @@ jobs:
       - name: Get changed files
         id: changed
         run: |
-          echo "##[group]Detecting changed files in terraform/"
-          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^terraform/' || true)
+          git fetch --depth=2 origin ${{ github.ref }}
+          base_sha=$(git rev-parse HEAD^ || git rev-parse HEAD)
+          echo "Base SHA: $base_sha"
+          changed_files=$(git diff --name-only "$base_sha" HEAD | grep '^terraform/' || true)
           echo "$changed_files"
           if [ -z "$changed_files" ]; then
             echo "No changes in terraform/ detected."
@@ -24,7 +26,7 @@ jobs:
           fi
           first_tf_file=$(echo "$changed_files" | grep '^terraform/.*/.*/.*/' | head -n 1)
           echo "file=$first_tf_file" >> $GITHUB_OUTPUT
-          echo "##[endgroup]"
+      
 
       - name: Extract path details
         if: steps.changed.outputs.file != ''
