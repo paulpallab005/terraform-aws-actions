@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'terraform/**'
+    branches: 
+      - feature/**
   workflow_dispatch:
     inputs:
       path:
