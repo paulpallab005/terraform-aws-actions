@@ -75,11 +75,13 @@ jobs:
       
     - name: Details set-up
       run: |
-        if [ "${{ needs.fetch-details.outputs.app_env }}" == "prod" ]; then
-          echo "AWS_ACCOUNT_TYPE=prod" >> $GITHUB_ENV
-        else
-          echo "AWS_ACCOUNT_TYPE=nonprod" >> $GITHUB_ENV
-        fi
+        acc_type=${{ needs.fetch-details.outputs.app_env == 'prod' && 'prod' || 'nonprod' }}
+        echo $acc_type
+        # if [ "${{ needs.fetch-details.outputs.app_env }}" == "prod" ]; then
+        #   echo "AWS_ACCOUNT_TYPE=prod" >> $GITHUB_ENV
+        # else
+        #   echo "AWS_ACCOUNT_TYPE=nonprod" >> $GITHUB_ENV
+        # fi
         # echo "path=terraform/${{ needs.fetch-details.outputs.app_name }}/${{ needs.fetch-details.outputs.aws_region }}/${{ needs.fetch-details.outputs.app_env }}/${{ needs.fetch-details.outputs.component }}" >> $GITHUB_ENV
 
     # - name: Configure AWS credentials
