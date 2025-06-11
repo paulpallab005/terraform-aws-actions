@@ -87,14 +87,14 @@ jobs:
 
     - name: Terraform Init
       run: |
+        cd ${{ env.path }}
         pwd
-        # cd ${{ env.path }}
         # terraform init
 
     - name: Terraform Apply
       run: |
+        cd ${{ env.path }}
         pwd
-        # cd ${{ env.path }}
         # terraform apply \
         #   -auto-approve \
         #   -input=false \
