@@ -66,6 +66,9 @@ jobs:
     environment: ${{ needs.fetch-details.outputs.app_env }}
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
     - name: Details set-up
       run: |
         if [ "${{ needs.fetch-details.outputs.app_env }}" == "prod" ]; then
