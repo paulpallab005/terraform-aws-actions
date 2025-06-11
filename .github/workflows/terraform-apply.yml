@@ -19,6 +19,7 @@ jobs:
       aws_region: ${{ steps.set-value.outputs.aws_region }}
       app_env: ${{ steps.set-value.outputs.app_env }}
       component: ${{ steps.set-value.outputs.component }}
+      relative_path: ${{ steps.set-value.outputs.relative_path }}
 
     steps:
     - name: Checkout repository
@@ -43,6 +44,7 @@ jobs:
           echo "aws_region=$region" >> $GITHUB_OUTPUT
           echo "app_env=$env" >> $GITHUB_OUTPUT
           echo "component=$component" >> $GITHUB_OUTPUT
+          echo "relative_path=$relative_path" >> $GITHUB_OUTPUT
 
   terraform-plan:
     needs: fetch-details
@@ -59,6 +61,7 @@ jobs:
           app_env: ${{ needs.fetch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACCOUNT_ID }}
           component: ${{ needs.fetch-details.outputs.component }}
+          relative_path: ${{ needs.fetch-details.outputs.relative_path }}
 
   terraform-apply:
     needs: [fetch-details, terraform-plan]
@@ -76,7 +79,7 @@ jobs:
         else
           echo "AWS_ACCOUNT_TYPE=nonprod" >> $GITHUB_ENV
         fi
-        echo "path=terraform/${{ needs.fetch-details.outputs.app_name }}/${{ needs.fetch-details.outputs.aws_region }}/${{ needs.fetch-details.outputs.app_env }}/${{ needs.fetch-details.outputs.component }}" >> $GITHUB_ENV
+        # echo "path=terraform/${{ needs.fetch-details.outputs.app_name }}/${{ needs.fetch-details.outputs.aws_region }}/${{ needs.fetch-details.outputs.app_env }}/${{ needs.fetch-details.outputs.component }}" >> $GITHUB_ENV
 
     # - name: Configure AWS credentials
     #   uses: aws-actions/configure-aws-credentials@v4
@@ -90,13 +93,13 @@ jobs:
 
     - name: Terraform Init
       run: |
-        cd ${{ env.path }}
+        cd ${{ needs.fetch-details.outputs.relative_path }}
         pwd
         # terraform init
 
     - name: Terraform Apply
       run: |
-        cd ${{ env.path }}
+        cd ${{ needs.fetch-details.outputs.relative_path }}
         pwd
         # terraform apply \
         #   -auto-approve \
