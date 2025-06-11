@@ -1,0 +1,103 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: 'Relative Path to Terraform file'
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  fetch-details:
+    runs-on: ubuntu-latest
+    outputs:
+      app_name: ${{ steps.set-value.outputs.app_name }}
+      aws_region: ${{ steps.set-value.outputs.aws_region }}
+      app_env: ${{ steps.set-value.outputs.app_env }}
+      component: ${{ steps.set-value.outputs.component }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize variables for Terraform
+      id: set-value
+      run: |
+          # Check if the path ends with a .tf file
+          if [[ "${{ inputs.path }}" == *.tf ]]; then
+            relative_path=$(dirname "${{ inputs.path }}")
+          else
+            relative_path="${{ inputs.path }}"
+          fi
+
+          #fetch region and environemnt
+          app_name=$(echo "$relative_path" | cut -d'/' -f2)
+          region=$(echo "$relative_path" | cut -d'/' -f3)
+          env=$(echo "$relative_path" | cut -d'/' -f4)
+          component=$(echo "$relative_path" | cut -d'/' -f5)
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
+          echo "aws_region=$region" >> $GITHUB_OUTPUT
+          echo "app_env=$env" >> $GITHUB_OUTPUT
+          echo "component=$component" >> $GITHUB_OUTPUT
+
+  terraform-plan:
+    needs: fetch-details
+    environment: ${{ needs.fetch-details.outputs.app_env }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Terraform Plan for dispatch
+        uses: ./.github/actions/terraform-plan
+        with:
+          app_name: ${{ needs.fetch-details.outputs.app_name }}
+          aws_region: ${{ needs.fetch-details.outputs.aws_region }}
+          app_env: ${{ needs.fetch-details.outputs.app_env }}
+          aws_acc_id: ${{ vars.AWS_ACCOUNT_ID }}
+          component: ${{ needs.fetch-details.outputs.component }}
+
+  terraform-apply:
+    needs: [fetch-details, terraform-plan]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.fetch-details.outputs.app_env }}
+
+    steps:
+    - name: Details set-up
+      run: |
+        if [ "${{ needs.fetch-details.outputs.app_env }}" == "prod" ]; then
+          echo "AWS_ACCOUNT_TYPE=prod" >> $GITHUB_ENV
+        else
+          echo "AWS_ACCOUNT_TYPE=nonprod" >> $GITHUB_ENV
+        fi
+        echo "path=terraform/${{ needs.fetch-details.outputs.app_name }}/${{ needs.fetch-details.outputs.aws_region }}/${{ needs.fetch-details.outputs.app_env }}/${{ needs.fetch-details.outputs.component }}" >> $GITHUB_ENV
+
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v4
+    #   with:
+    #     role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/idam-github-${{ env.AWS_ACCOUNT_TYPE }}
+    #     aws-region: ${{ needs.fetch-details.outputs.aws_region }}  
+    
+    
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: |
+        pwd
+        # cd ${{ env.path }}
+        # terraform init
+
+    - name: Terraform Apply
+      run: |
+        pwd
+        # cd ${{ env.path }}
+        # terraform apply \
+        #   -auto-approve \
+        #   -input=false \
+        #   -var-file="terraform.tfvars" \
+        #   -var="env=${{ needs.fetch-details.outputs.app_env }}" \
+        #   -var="region=${{ needs.fetch-details.outputs.aws_region }}"
