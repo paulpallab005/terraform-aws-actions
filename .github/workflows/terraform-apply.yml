@@ -51,8 +51,7 @@ jobs:
     environment: ${{ needs.fetch-details.outputs.app_env }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
+    
       - name: Run Terraform Plan for dispatch
         uses: ./.github/actions/terraform-plan
         with:
