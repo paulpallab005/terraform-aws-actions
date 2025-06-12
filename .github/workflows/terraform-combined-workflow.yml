@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       path:
-        description: 'Terraform path (e.g., terraform/app1/us-east-1/stage)'
+        description: 'Relative Path to Terraform file'
         required: true
       destroy_plan:
         description: 'Terraform Destroy Plan'
