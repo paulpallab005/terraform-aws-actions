@@ -98,6 +98,8 @@ jobs:
       aws_region: ${{ steps.parse.outputs.aws_region }}
       app_env: ${{ steps.parse.outputs.app_env }}
       component: ${{ steps.parse.outputs.component }}
+      destroy_plan: ${{ inputs.destroy_plan }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -124,7 +126,7 @@ jobs:
           echo "component=$component" >> $GITHUB_OUTPUT
 
   plan-dispatch:
-    if: ${{ inputs.destroy_plan == 'false' }}
+    if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'false' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
     runs-on: ubuntu-latest
@@ -141,7 +143,7 @@ jobs:
           component: ${{ needs.fetch-dispatch-details.outputs.component }}
 
   destroy-plan-dispatch:
-    if: ${{ inputs.destroy_plan == 'true' }}
+    if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'true' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
     runs-on: ubuntu-latest
