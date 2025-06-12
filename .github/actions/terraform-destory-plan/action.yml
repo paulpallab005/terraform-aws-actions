@@ -1,0 +1,37 @@
+name: Terraform Plan
+description: Runs Terraform plan for given app/region/env
+
+inputs:
+  app_name:
+    required: true
+  aws_region:
+    required: true
+  app_env:
+    required: true
+  aws_acc_id: 
+    required: true
+  component:
+    required: true
+  relative_path:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v3
+    #   with:
+    #     role-to-assume: arn:aws:iam::123456789012:role/TerraformPlanRole
+    #     aws-region: ${{ inputs.aws_region }}
+
+    - name: Terraform Init and Plan
+      run: |
+        # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
+        cd ${{ inputs.relative_path }}
+        
+        ls -lrt
+        echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
+        echo "Terraform destroy Plan"
+      shell: bash

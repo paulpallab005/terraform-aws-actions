@@ -11,6 +11,11 @@ on:
       path:
         description: 'Terraform path (e.g., terraform/app1/us-east-1/stage)'
         required: true
+      destroy_plan:
+        description: 'Terraform Destroy Plan'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   fetch-push-details:
@@ -119,6 +124,7 @@ jobs:
           echo "component=$component" >> $GITHUB_OUTPUT
 
   plan-dispatch:
+    if: ${{ inputs.destroy_plan == 'false' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
     runs-on: ubuntu-latest
@@ -127,6 +133,23 @@ jobs:
 
       - name: Run Terraform Plan for dispatch
         uses: ./.github/actions/terraform-plan
+        with:
+          app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
+          aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
+          app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
+          aws_acc_id: ${{ vars.AWS_ACC_ID }}
+          component: ${{ needs.fetch-dispatch-details.outputs.component }}
+
+  destroy-plan-dispatch:
+    if: ${{ inputs.destroy_plan == 'true' }}
+    needs: fetch-dispatch-details
+    environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Terraform Destroy Plan for dispatch
+        uses: ./.github/actions/terraform-destory-plan
         with:
           app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
           aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
