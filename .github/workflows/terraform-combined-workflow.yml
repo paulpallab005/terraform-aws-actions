@@ -126,7 +126,7 @@ jobs:
           echo "app_env=$env" >> $GITHUB_OUTPUT
           echo "component=$component" >> $GITHUB_OUTPUT
 
-  plan-dispatch:
+  tf-plan-dispatch:
     if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'false' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
