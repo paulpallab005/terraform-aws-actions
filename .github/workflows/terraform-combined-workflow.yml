@@ -89,6 +89,7 @@ jobs:
           app_env: ${{ matrix.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ matrix.component }}
+          tf-destroy: false
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
