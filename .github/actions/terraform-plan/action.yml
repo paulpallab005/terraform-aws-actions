@@ -31,9 +31,11 @@ runs:
     - name: Terraform Init and Plan
       run: |
         if [[ ${{ inputs.tf-destroy }} == true ]]; then
-          destroy-flag = '-destroy'
+          echo "Running terraform destroy plan"
+          echo "terraform plan -destroy --var"
         else
-          destroy-flag = ''
+          echo "Running terraform plan"
+          echo "terraform plan --var"
         fi
 
         # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
@@ -42,5 +44,4 @@ runs:
         # terraform plan -input=false
         ls -lrt
         echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
-        echo "terraform plan ${{ destroy-flag }} --var"
       shell: bash
