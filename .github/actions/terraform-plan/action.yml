@@ -42,5 +42,5 @@ runs:
         # terraform plan -input=false
         ls -lrt
         echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
-        echo "terraform plan $destroy-flag --var"
+        echo "terraform plan ${{ destroy-flag }} --var"
       shell: bash
