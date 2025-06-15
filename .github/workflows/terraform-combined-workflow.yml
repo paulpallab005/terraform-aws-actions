@@ -89,6 +89,7 @@ jobs:
           app_env: ${{ matrix.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ matrix.component }}
+          tf-destroy: false
 
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -125,7 +126,7 @@ jobs:
           echo "app_env=$env" >> $GITHUB_OUTPUT
           echo "component=$component" >> $GITHUB_OUTPUT
 
-  plan-dispatch:
+  tf-plan-dispatch:
     if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'false' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
@@ -141,8 +142,9 @@ jobs:
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ needs.fetch-dispatch-details.outputs.component }}
+          tf-destroy: ${{ needs.fetch-dispatch-details.outputs.destroy_plan }}
 
-  destroy-plan-dispatch:
+  tf-destroy-plan-dispatch:
     if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'true' }}
     needs: fetch-dispatch-details
     environment: ${{ needs.fetch-dispatch-details.outputs.app_env }}
@@ -151,11 +153,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Terraform Destroy Plan for dispatch
-        uses: ./.github/actions/terraform-destory-plan
+        uses: ./.github/actions/terraform-plan
         with:
           app_name: ${{ needs.fetch-dispatch-details.outputs.app_name }}
           aws_region: ${{ needs.fetch-dispatch-details.outputs.aws_region }}
           app_env: ${{ needs.fetch-dispatch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACC_ID }}
           component: ${{ needs.fetch-dispatch-details.outputs.component }}
+          tf-destroy: ${{ needs.fetch-dispatch-details.outputs.destroy_plan }}
             
