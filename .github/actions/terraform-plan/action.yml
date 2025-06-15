@@ -30,8 +30,7 @@ runs:
 
     - name: Terraform Init and Plan
       run: |
-        # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
-        cd ${{ inputs.relative_path }}
+        cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
         # terraform init
 
         if [[ ${{ inputs.tf-destroy }} == true ]]; then
