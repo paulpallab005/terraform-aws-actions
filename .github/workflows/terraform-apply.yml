@@ -62,7 +62,7 @@ jobs:
           app_env: ${{ needs.fetch-details.outputs.app_env }}
           aws_acc_id: ${{ vars.AWS_ACCOUNT_ID }}
           component: ${{ needs.fetch-details.outputs.component }}
-          relative_path: ${{ needs.fetch-details.outputs.relative_path }}
+          tf-destroy: false
 
   terraform-apply:
     needs: [fetch-details, terraform-plan]
