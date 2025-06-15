@@ -1,4 +1,4 @@
-name: Terraform Plan
+name: Terraform Destroy Plan
 description: Runs Terraform plan for given app/region/env
 
 inputs:
@@ -30,8 +30,11 @@ runs:
       run: |
         # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
         cd ${{ inputs.relative_path }}
-        
+        # terraform plan -destroy \
+        #     -var-file="terraform.tfvars" \
+        #     -var="env=${{ needs.fetch-dispatch-details.outputs.app_env }}" \
+        #     -var="region=${{ needs.fetch-dispatch-details.outputs.aws_region }}"
         ls -lrt
         echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
-        echo "Terraform destroy Plan"
+        echo "terarform plan destroy"
       shell: bash

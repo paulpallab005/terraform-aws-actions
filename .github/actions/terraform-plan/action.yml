@@ -14,6 +14,8 @@ inputs:
     required: true
   relative_path:
     required: true
+  tf-destroy:
+    required: true
 
 runs:
   using: "composite"
@@ -28,10 +30,17 @@ runs:
 
     - name: Terraform Init and Plan
       run: |
+        if [[ ${{ inputs.tf-destroy }} == true ]]; then
+          destroy-flag = '-destroy'
+        else
+          destroy-flag = ''
+        fi
+
         # cd terraform/${{ inputs.app_name }}/${{ inputs.aws_region }}/${{ inputs.app_env }}/${{ inputs.component }}
         cd ${{ inputs.relative_path }}
         # terraform init -input=false
         # terraform plan -input=false
         ls -lrt
         echo ${{ inputs.app_name }} ${{ inputs.aws_region }} ${{ inputs.app_env }} ${{ inputs.aws_acc_id }}
+        echo "terraform plan $destroy-flag --var"
       shell: bash
