@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trigger Terraform Apply
-        uses: terraform-aws-actions/.github/workflows/terraform-apply.yml@main
+        uses: paulpallab005/terraform-aws-actions/.github/workflows/terraform-apply.yml@main
         with:
             path: ${{ matrix.path }}
 
