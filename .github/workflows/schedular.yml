@@ -3,6 +3,10 @@ name: Terraform Scheduled Apply
 on:
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   fetch-paths:
     runs-on: ubuntu-latest
