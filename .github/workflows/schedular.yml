@@ -1,0 +1,40 @@
+name: Terraform Scheduled Apply
+
+on:
+#   schedule:
+#     - cron: '0 2 * * *'  # Every day at 2:00 AM UTC
+  workflow_dispatch:
+
+jobs:
+  fetch-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find Terraform Files
+        id: set-matrix
+        run: |
+          paths=$(find terraform/idam-data-retention -type f -name 'ec2.tf')
+
+          matrix=$(echo "$paths" | while read -r path; do
+            echo "{\"path\":\"$path\"}"
+          done | jq -s '.')
+
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  apply:
+    needs: fetch-paths
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.fetch-paths.outputs.matrix) }}
+
+    steps:
+      - name: Trigger Terraform Apply
+        uses: ./.github/workflows/terraform-apply.yml
+        with:
+            path: ${{ matrix.path }}
+

@@ -1,6 +1,11 @@
 name: Terraform Apply
 
 on:
+  workflow_call:
+    inputs:
+      path:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       path:
