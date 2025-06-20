@@ -10,6 +10,7 @@ on:
         required: true
         type: choice
         options:
+          - dev
           - stage
           - prod
 
@@ -34,7 +35,7 @@ jobs:
           else
             env="stage"
           fi
-          paths=$(find terraform/app1/*/$env -type f -name 'ec2.tf')
+          paths=$(find terraform/app1/*$env -type f -name 'ec2.tf')
           echo $path
 
           matrix=$(echo "$paths" | while read -r path; do
