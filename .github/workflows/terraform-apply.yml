@@ -57,10 +57,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
         echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| App Name | ${{ steps.set-vars.outputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Environment | ${{ steps.set-vars.outputs.app_env }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Region | ${{ steps.set-vars.outputs.aws_region }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Component | ${{ steps.set-vars.outputs.component }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| App Name | ${{ steps.set-value.outputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Environment | ${{ steps.set-value.outputs.app_env }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Region | ${{ steps.set-value.outputs.aws_region }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | ${{ steps.set-value.outputs.component }} |" >> $GITHUB_STEP_SUMMARY
 
   terraform-plan:
     needs: fetch-details

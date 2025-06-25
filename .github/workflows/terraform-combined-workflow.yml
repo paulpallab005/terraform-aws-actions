@@ -132,10 +132,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| App Name | ${{ steps.set-vars.outputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | ${{ steps.set-vars.outputs.app_env }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Region | ${{ steps.set-vars.outputs.aws_region }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | ${{ steps.set-vars.outputs.component }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| App Name | ${{ steps.parse.outputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ steps.parse.outputs.app_env }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Region | ${{ steps.parse.outputs.aws_region }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | ${{ steps.parse.outputs.component }} |" >> $GITHUB_STEP_SUMMARY
 
   tf-plan-dispatch:
     if: ${{ needs.fetch-dispatch-details.outputs.destroy_plan == 'false' }}
