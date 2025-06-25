@@ -140,7 +140,11 @@ jobs:
 
       - name: Write inputs to summary
         run: |
-          echo "${{ inputs.destroy_plan == 'true' ? '# Terraform Destroy Plan Configuration' : '# Terraform Plan Configuration' }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.destroy_plan }}" = "true" ]; then
+            echo "# Terraform Destroy Plan Configuration" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "# Terraform Plan Configuration" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
