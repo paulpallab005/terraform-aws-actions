@@ -6,6 +6,7 @@ on:
       - 'terraform/**'
     branches: 
       - feature/**
+      - main
   workflow_dispatch:
     inputs:
       path:
