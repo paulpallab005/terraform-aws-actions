@@ -51,6 +51,17 @@ jobs:
           echo "component=$component" >> $GITHUB_OUTPUT
           echo "relative_path=$relative_path" >> $GITHUB_OUTPUT
 
+    - name: Write inputs to summary
+      run: |
+        echo "# Terraform Plan Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| App Name | ${{ steps.set-vars.outputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Environment | ${{ steps.set-vars.outputs.app_env }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Region | ${{ steps.set-vars.outputs.aws_region }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | ${{ steps.set-vars.outputs.component }} |" >> $GITHUB_STEP_SUMMARY
+
   terraform-plan:
     needs: fetch-details
     environment: ${{ needs.fetch-details.outputs.app_env }}
