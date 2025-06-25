@@ -53,7 +53,7 @@ jobs:
 
     - name: Write inputs to summary
       run: |
-        echo "# Terraform Plan Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "# Terraform Apply Configuration" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
         echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
