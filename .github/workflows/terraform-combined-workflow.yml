@@ -91,6 +91,17 @@ jobs:
           component: ${{ matrix.component }}
           tf-destroy: false
 
+      - name: Write inputs to summary
+        run: |
+          echo "# Terraform Plan Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| App Name | ${{ matrix.app_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ matrix.app_env }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Region | ${{ matrix.aws_region }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | ${{ matrix.component }} |" >> $GITHUB_STEP_SUMMARY
+
   fetch-dispatch-details:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
