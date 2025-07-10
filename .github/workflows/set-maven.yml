@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Set Maven
 
 on:
   workflow_dispatch:
@@ -35,5 +35,3 @@ jobs:
         run: |
           echo "PATH = $PATH"
           echo "M2_HOME = $M2_HOME"
-          mvn -version
-          echo $PATH $M2_HOME
