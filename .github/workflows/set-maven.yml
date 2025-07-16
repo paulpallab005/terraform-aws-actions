@@ -17,7 +17,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Get branch name
         run: echo "Branch name: ${{ github.ref_name }}"
 
@@ -33,6 +32,9 @@ jobs:
           tar -xzf apache-maven-3.6.2-bin.tar.gz
           echo "$PWD/apache-maven-3.6.2/bin" >> $GITHUB_PATH
           echo "M2_HOME=$PWD/apache-maven-3.6.2" >> $GITHUB_ENV
+
+      - name: Verify Maven installation
+        run: mvn -version
 
       - name: Show environment info
         run: |
