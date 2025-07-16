@@ -1,8 +1,8 @@
 name: Scheduled AMI-Patching
 
 on:
-#   schedule:
-#     - cron: '30 4 16 * *' # 16th day everymonth at 4:30 AM UTC/ 10:00 AM IST
+  schedule:
+    - cron: '46 9 16 * *' # 16th day everymonth at 4:30 AM UTC/ 10:00 AM IST
   workflow_dispatch:
     inputs:
       env:
