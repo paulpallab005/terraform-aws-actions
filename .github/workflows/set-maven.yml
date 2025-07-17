@@ -64,10 +64,11 @@ jobs:
 
           echo "Selected criteria: $criteria"
 
-          # if [ -z "$criteria" ]; then
-          #   echo "No criteria selected. Please select at least one criteria."
-          #   exit 1
-          # fi
+          if [ -z "$criteria" ]; then
+            echo "No criteria selected. Please select at least one criteria."
+            exit 1
+          fi
+          
           # wget https://archive.apache.org/dist/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.tar.gz
           # tar -xzf apache-maven-3.6.2-bin.tar.gz
           # echo "$PWD/apache-maven-3.6.2/bin" >> $GITHUB_PATH
