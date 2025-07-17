@@ -46,7 +46,7 @@ jobs:
           java-version: '11'
 
       - name: Install Maven 3.6.2
-      run: |
+        run: |
           # Build criteria string based on user input
           criteria=""
           if [ "${{ inputs.criteria_create }}" = "true" ]; then
