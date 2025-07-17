@@ -12,6 +12,7 @@ on:
         - modify
         - lastlogin
         - pearsonlastlogin
+        multiple: true
 
 jobs:
   build:
