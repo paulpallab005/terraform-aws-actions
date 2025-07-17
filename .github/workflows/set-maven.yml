@@ -3,16 +3,26 @@ name: Set Maven
 on:
   workflow_dispatch:
     inputs:
-      criteria:
-        description: 'User criteria (select one or more)'
-        required: true
-        type: choice
-        options:
-        - create
-        - modify
-        - lastlogin
-        - pearsonlastlogin
-        multiple: true
+      criteria_create:
+        description: 'Criteria: create'
+        type: boolean
+        required: false
+        default: false
+      criteria_modify:
+        description: 'Criteria: modify'
+        type: boolean
+        required: false
+        default: false
+      criteria_lastlogin:
+        description: 'Criteria: lastlogin'
+        type: boolean
+        required: false
+        default: false
+      criteria_pearsonlastlogin:
+        description: 'Criteria: pearsonlastlogin'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build:
@@ -36,8 +46,28 @@ jobs:
           java-version: '11'
 
       - name: Install Maven 3.6.2
-        run: |
-          echo "Selected criteria: ${{ inputs.criteria }}"
+      run: |
+          # Build criteria string based on user input
+          criteria=""
+          if [ "${{ inputs.criteria_create }}" = "true" ]; then
+            criteria="create"
+          fi
+          if [ "${{ inputs.criteria_modify }}" = "true" ]; then
+            if [ -n "$criteria" ]; then criteria="$criteria,modify"; else criteria="modify"; fi
+          fi
+          if [ "${{ inputs.criteria_lastlogin }}" = "true" ]; then
+            if [ -n "$criteria" ]; then criteria="$criteria,lastlogin"; else criteria="lastlogin"; fi
+          fi
+          if [ "${{ inputs.criteria_pearsonlastlogin }}" = "true" ]; then
+            if [ -n "$criteria" ]; then criteria="$criteria,pearsonlastlogin"; else criteria="pearsonlastlogin"; fi
+          fi
+
+          echo "Selected criteria: $criteria"
+
+          if [ -z "$criteria" ]; then
+            echo "No criteria selected. Please select at least one criteria."
+            exit 1
+          fi
           wget https://archive.apache.org/dist/maven/maven-3/3.6.2/binaries/apache-maven-3.6.2-bin.tar.gz
           tar -xzf apache-maven-3.6.2-bin.tar.gz
           echo "$PWD/apache-maven-3.6.2/bin" >> $GITHUB_PATH
