@@ -31,16 +31,11 @@ jobs:
       # gh_workflow_file_changed: ${{ steps.filter.outputs.gh_workflow_file }}
     steps:
       - uses: actions/checkout@v4
+      
       - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            # iam_task_service:
-            #   - 'java/iam-task-service/**'
-            # pom:
-            #   - 'java/pom.xml'
-            # gh_workflow_file:
-            #   - '.github/workflows/routing-build.yml'
             terraform:
               - 'terraform/**'
 
@@ -48,7 +43,6 @@ jobs:
     needs: filter
     runs-on: ubuntu-latest
     if: needs.filter.outputs.terraform_changed == 'true'
-    # if: needs.filter.outputs.iam_changed == 'true' || needs.filter.outputs.pom_changed == 'true' || needs.filter.outputs.gh_workflow_file_changed == 'true'
     env:
       IAM_TASK_SERVICE: iam-task-service
       POM: pom.xml
