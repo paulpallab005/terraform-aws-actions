@@ -37,13 +37,13 @@ jobs:
           echo "M2_HOME = $M2_HOME"
 
       - name: Write Maven settings.xml
-        run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > $GITHUB_WORKSPACE/settings.xml
+        run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > settings.xml
 
-      # - name: Print Maven settings.xml
-      #   run: cat $GITHUB_WORKSPACE/settings.xml
+      - name: List files
+        run: ls -al
 
       - name: Upload Maven settings.xml as artifact
         uses: actions/upload-artifact@v4
         with:
           name: maven-settings
-          path: $GITHUB_WORKSPACE/settings.xml
+          path: settings.xml
