@@ -18,6 +18,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check previous workflow run status
+        id: prev_status
+        run: |
+          PREV_STATUS=$(gh run list --workflow="${{ github.workflow }}" --branch="${GITHUB_REF##*/}" --limit 2 --json conclusion --jq '.[1].conclusion')
+          echo "prev_status=$PREV_STATUS" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build or Deploy iam-task-service
+        if: steps.prev_status.outputs.prev_status != 'success'
+        run: echo "Proceeding with next steps"
+
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
@@ -38,12 +50,3 @@ jobs:
 
       - name: Write Maven settings.xml
         run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > settings.xml
-
-      - name: List files
-        run: ls -al
-
-      - name: Upload Maven settings.xml as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: maven-settings
-          path: settings.xml
