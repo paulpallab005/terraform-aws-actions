@@ -2,6 +2,9 @@ name: Set Maven
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'terraform/**'
 
 jobs:
   build:
@@ -33,9 +36,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Stop if last build was successful
-        if: steps.prev_status.outputs.prev_status == 'success'
+        if: steps.prev_status.outputs.prev_status == 'success' && github.event_name == 'workflow_dispatch'
         run: |
-          echo "Last build on this branch was successful. Skipping further steps."
+          echo "Last build on this ${GITHUB_REF##*/} branch on ${{ github.event_name }} was successful. Skipping further steps."
           exit 1
 
       - name: Set up JDK 11
