@@ -18,17 +18,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install GitHub CLI
+        run: sudo apt-get update && sudo apt-get install -y gh
+
       - name: Check previous workflow run status
         id: prev_status
         run: |
-          PREV_STATUS=$(gh run list --workflow="${{ github.workflow }}" --branch="${GITHUB_REF##*/}" --limit 2 --json conclusion --jq '.[1].conclusion')
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          WORKFLOW_NAME="${{ github.workflow }}"
+          PREV_STATUS=$(gh run list --workflow="$WORKFLOW_NAME" --branch="$BRANCH_NAME" --limit 2 --json conclusion --jq '.[1].conclusion')
+          echo "Previous run status: $PREV_STATUS"
           echo "prev_status=$PREV_STATUS" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Build or Deploy iam-task-service
-        if: steps.prev_status.outputs.prev_status != 'success'
-        run: echo "Proceeding with next steps"
+      - name: Stop if last build was successful
+        if: steps.prev_status.outputs.prev_status == 'success'
+        run: |
+          echo "Last build on this branch was successful. Skipping further steps."
+          exit 0
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
