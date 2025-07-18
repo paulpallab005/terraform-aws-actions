@@ -1,19 +1,25 @@
 name: Set Maven
 
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches:
+#       - main
+#       # - feature/IDAMDO-1438
+#       # - develop
+#       # - 'hotfix*'
+#       # - '*release*'
+#     paths:
+#       - 'terraform/**'
+#       # - 'java/iam-task-service/**'
+#       # - 'java/pom.xml'
+#       # - '.github/workflows/routing-build.yml'
+
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      # - feature/IDAMDO-1438
-      # - develop
-      # - 'hotfix*'
-      # - '*release*'
     paths:
       - 'terraform/**'
-      # - 'java/iam-task-service/**'
-      # - 'java/pom.xml'
-      # - '.github/workflows/routing-build.yml'
 
 jobs:
   filter:
@@ -75,16 +81,16 @@ jobs:
       - name: Write Maven settings.xml
         run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > settings.xml
 
-      - name: Build or Deploy iam-task-service
-        run: |
-          cd java
-          BRANCH_NAME="${GITHUB_REF##*/}"
-          if [[ "$BRANCH_NAME" == "develop" ]] || [[ "$BRANCH_NAME" == hotfix* ]] || [[ "$BRANCH_NAME" == *release* ]]; then
-            MVN_CMD="deploy"
-          else
-            MVN_CMD="install"
-          fi
-          mvn -s ../settings.xml clean $MVN_CMD -P $IAM_TASK_SERVICE \
-            -Dgithub.build_number=${GITHUB_BUILD_NUMBER} \
-            -Dgithub.build_url=${GITHUB_RUN_URL} \
-            -Dgithub.git_commit=${GITHUB_SHA}
+      # - name: Build or Deploy iam-task-service
+      #   run: |
+      #     cd java
+      #     BRANCH_NAME="${GITHUB_REF##*/}"
+      #     if [[ "$BRANCH_NAME" == "develop" ]] || [[ "$BRANCH_NAME" == hotfix* ]] || [[ "$BRANCH_NAME" == *release* ]]; then
+      #       MVN_CMD="deploy"
+      #     else
+      #       MVN_CMD="install"
+      #     fi
+      #     mvn -s ../settings.xml clean $MVN_CMD -P $IAM_TASK_SERVICE \
+      #       -Dgithub.build_number=${GITHUB_BUILD_NUMBER} \
+      #       -Dgithub.build_url=${GITHUB_RUN_URL} \
+      #       -Dgithub.git_commit=${GITHUB_SHA}
