@@ -1,17 +1,19 @@
-name: routing_multibranch
+name: Set Maven
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - feature/IDAMDO-1438
-      - develop
-      - 'hotfix*'
-      - '*release*'
+      - main
+      # - feature/IDAMDO-1438
+      # - develop
+      # - 'hotfix*'
+      # - '*release*'
     paths:
-      - 'java/iam-task-service/**'
-      - 'java/pom.xml'
-      - '.github/workflows/routing-build.yml'
+      - 'terraform/**'
+      # - 'java/iam-task-service/**'
+      # - 'java/pom.xml'
+      # - '.github/workflows/routing-build.yml'
 
 jobs:
   filter:
