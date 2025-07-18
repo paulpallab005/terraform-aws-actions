@@ -39,8 +39,8 @@ jobs:
       - name: Write Maven settings.xml
         run: |
           cat <<EOF > $GITHUB_WORKSPACE/settings.xml
-      ${{ secrets.MAVEN_SETTINGS_XML }}
-      EOF
+${{ secrets.MAVEN_SETTINGS_XML }}
+EOF
 
-      - name: Print Maven settings.xml
+      - name: Print Maven
         run: cat $GITHUB_WORKSPACE/settings.xml
