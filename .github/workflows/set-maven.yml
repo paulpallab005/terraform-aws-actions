@@ -1,15 +1,46 @@
-name: Set Maven
+name: routing_multibranch
 
 on:
   workflow_dispatch:
   push:
+    branches:
+      - feature/IDAMDO-1438
+      - develop
+      - 'hotfix*'
+      - '*release*'
     paths:
-      - 'terraform/**'
+      - 'java/iam-task-service/**'
+      - 'java/pom.xml'
+      - '.github/workflows/routing-build.yml'
 
 jobs:
-  build:
+  filter:
     runs-on: ubuntu-latest
+    outputs:
+      terraform_changed: ${{ steps.filter.outputs.terraform_changed }}
+      # iam_changed: ${{ steps.filter.outputs.iam_task_service }}
+      # pom_changed: ${{ steps.filter.outputs.pom }}
+      # gh_workflow_file_changed: ${{ steps.filter.outputs.gh_workflow_file }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            # iam_task_service:
+            #   - 'java/iam-task-service/**'
+            # pom:
+            #   - 'java/pom.xml'
+            # gh_workflow_file:
+            #   - '.github/workflows/routing-build.yml'
+            terraform:
+              - 'terraform/**'
 
+  build:
+    needs: filter
+    runs-on: ubuntu-latest
+    if: needs.filter.outputs.terraform_changed == 'true'
+    # if: needs.filter.outputs.iam_changed == 'true' || needs.filter.outputs.pom_changed == 'true' || needs.filter.outputs.gh_workflow_file_changed == 'true'
     env:
       IAM_TASK_SERVICE: iam-task-service
       POM: pom.xml
@@ -20,26 +51,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install GitHub CLI
-        run: sudo apt-get update && sudo apt-get install -y gh
-
-      - name: Check previous workflow run status
-        id: prev_status
-        run: |
-          BRANCH_NAME="${GITHUB_REF##*/}"
-          WORKFLOW_NAME="${{ github.workflow }}"
-          PREV_STATUS=$(gh run list --workflow="$WORKFLOW_NAME" --branch="$BRANCH_NAME" --limit 2 --json conclusion --jq '.[1].conclusion')
-          echo "Previous run status: $PREV_STATUS"
-          echo "prev_status=$PREV_STATUS" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Stop if last build was successful
-        if: steps.prev_status.outputs.prev_status == 'success' && github.event_name == 'workflow_dispatch'
-        run: |
-          echo "Last build on this ${GITHUB_REF##*/} branch on ${{ github.event_name }} was successful. Skipping further steps."
-          exit 1
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
@@ -61,3 +72,17 @@ jobs:
 
       - name: Write Maven settings.xml
         run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > settings.xml
+
+      - name: Build or Deploy iam-task-service
+        run: |
+          cd java
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          if [[ "$BRANCH_NAME" == "develop" ]] || [[ "$BRANCH_NAME" == hotfix* ]] || [[ "$BRANCH_NAME" == *release* ]]; then
+            MVN_CMD="deploy"
+          else
+            MVN_CMD="install"
+          fi
+          mvn -s ../settings.xml clean $MVN_CMD -P $IAM_TASK_SERVICE \
+            -Dgithub.build_number=${GITHUB_BUILD_NUMBER} \
+            -Dgithub.build_url=${GITHUB_RUN_URL} \
+            -Dgithub.git_commit=${GITHUB_SHA}
