@@ -25,13 +25,13 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      terraform_changed: ${{ steps.filter.outputs.terraform_changed }}
+      terraform_changed: ${{ steps.filter.outputs.terraform }}
       # iam_changed: ${{ steps.filter.outputs.iam_task_service }}
       # pom_changed: ${{ steps.filter.outputs.pom }}
       # gh_workflow_file_changed: ${{ steps.filter.outputs.gh_workflow_file }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
