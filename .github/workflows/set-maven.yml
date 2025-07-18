@@ -37,10 +37,7 @@ jobs:
           echo "M2_HOME = $M2_HOME"
 
       - name: Write Maven settings.xml
-        run: |
-          cat <<EOF > $GITHUB_WORKSPACE/settings.xml
-${{ secrets.MAVEN_SETTINGS_XML }}
-EOF
+        run: echo "${{ secrets.MAVEN_SETTINGS_XML }}" > $GITHUB_WORKSPACE/settings.xml
 
-      - name: Print Maven
+      - name: Print Maven settings.xml
         run: cat $GITHUB_WORKSPACE/settings.xml
