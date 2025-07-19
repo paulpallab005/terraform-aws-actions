@@ -13,7 +13,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
-      terraform_changed: ${{ steps.filter.outputs.terraform }}
+      proceed_build: ${{ steps.check_changes.outputs.proceed_build }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,14 +25,17 @@ jobs:
           PREV_SHA=$(git rev-parse HEAD~1)
           echo "prev_sha=$PREV_SHA" >> $GITHUB_OUTPUT
 
-      - name: Run paths-filter on last two commits
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          base: ${{ steps.prev_commit.outputs.prev_sha }}
-          filters: |
-            terraform:
-              - 'terraform/**'
+      - name: Check for changes in relevant files
+        id: check_changes
+        run: |
+          git fetch --depth=2
+          CHANGED=$(git diff --name-only ${{ steps.prev_commit.outputs.prev_sha }} HEAD)
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^terraform/'; then
+            echo "proceed_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "proceed_build=false" >> $GITHUB_OUTPUT
+          fi
 
   set_value_push:
     if: github.event_name == 'push'
@@ -54,7 +57,7 @@ jobs:
       - name: Set Value
         id: set_value_dispatch
         run: |
-          if [[ "${{ needs.filter.outputs.terraform_changed }}" == 'true' ]]; then
+          if [[ "${{ needs.filter.outputs.proceed_build }}" == 'true' ]]; then
             echo "Terraform files have changed, proceeding with build."
             echo "proceed_build=true" >> $GITHUB_OUTPUT
           else
