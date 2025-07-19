@@ -17,11 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 2
 
-      - uses: dorny/paths-filter@v3
+      - name: Get previous commit SHA
+        id: prev_commit
+        run: |
+          PREV_SHA=$(git rev-parse HEAD~1)
+          echo "prev_sha=$PREV_SHA" >> $GITHUB_OUTPUT
+
+      - name: Run paths-filter on last two commits
         id: filter
+        uses: dorny/paths-filter@v3
         with:
+          base: ${{ steps.prev_commit.outputs.prev_sha }}
           filters: |
             terraform:
               - 'terraform/**'
@@ -30,10 +38,10 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      proceed_build: ${{ steps.set_value.outputs.proceed_build }}
+      proceed_build: ${{ steps.set_value_push.outputs.proceed_build }}
     steps:
       - name: Set Value
-        id: set_value
+        id: set_value_push
         run: echo "proceed_build=true" >> $GITHUB_OUTPUT
 
   set_value_dispatch:
@@ -41,10 +49,10 @@ jobs:
     needs: filter
     runs-on: ubuntu-latest
     outputs:
-      proceed_build: ${{ steps.set_value.outputs.proceed_build }}
+      proceed_build: ${{ steps.set_value_dispatch.outputs.proceed_build }}
     steps:
       - name: Set Value
-        id: set_value
+        id: set_value_dispatch
         run: |
           if [[ "${{ needs.filter.outputs.terraform_changed }}" == 'true' ]]; then
             echo "Terraform files have changed, proceeding with build."
