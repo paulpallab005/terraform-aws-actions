@@ -9,7 +9,7 @@ on:
       - 'terraform/**'
 
 jobs:
-  filter:
+  filter_dispatch:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
@@ -46,7 +46,7 @@ jobs:
 
   set_value_dispatch:
     if: github.event_name == 'workflow_dispatch'
-    needs: filter
+    needs: filter_dispatch
     runs-on: ubuntu-latest
     outputs:
       proceed_build: ${{ steps.set_value_dispatch.outputs.proceed_build }}
@@ -54,7 +54,7 @@ jobs:
       - name: Set Value
         id: set_value_dispatch
         run: |
-          if [[ "${{ needs.filter.outputs.terraform_changed }}" == 'true' ]]; then
+          if [[ "${{ needs.filter_dispatch.outputs.terraform_changed }}" == 'true' ]]; then
             echo "Terraform files have changed, proceeding with build."
             echo "proceed_build=true" >> $GITHUB_OUTPUT
           else
