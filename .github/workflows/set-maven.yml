@@ -9,7 +9,7 @@ on:
       - 'terraform/**'
 
 jobs:
-  filter_dispatch:
+  filter:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
@@ -46,15 +46,18 @@ jobs:
 
   set_value_dispatch:
     if: github.event_name == 'workflow_dispatch'
-    needs: filter_dispatch
+    needs: filter
     runs-on: ubuntu-latest
     outputs:
       proceed_build: ${{ steps.set_value_dispatch.outputs.proceed_build }}
     steps:
+      - name: Debug filter output
+        run: echo "terraform_changed=${{ needs.filter.outputs.terraform_changed }}"
+
       - name: Set Value
         id: set_value_dispatch
         run: |
-          if [[ "${{ needs.filter_dispatch.outputs.terraform_changed }}" == 'true' ]]; then
+          if [[ "${{ needs.filter.outputs.terraform_changed }}" == 'true' ]]; then
             echo "Terraform files have changed, proceeding with build."
             echo "proceed_build=true" >> $GITHUB_OUTPUT
           else
@@ -66,7 +69,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: [set_value_push, set_value_dispatch]
-    if: needs.set_value_push.outputs.proceed_build == 'true' || needs.set_value_dispatch.outputs.proceed_build == 'true'
+    # if: needs.set_value_push.outputs.proceed_build == 'true' || needs.set_value_dispatch.outputs.proceed_build == 'true'
     env:
       IAM_TASK_SERVICE: iam-task-service
       POM: pom.xml
@@ -75,6 +78,11 @@ jobs:
       GITHUB_SHA: ${{ github.sha }}
 
     steps:
+      - name: Debug proceed_build outputs
+        run: |
+          echo "set_value_push: ${{ needs.set_value_push.outputs.proceed_build }}"
+          echo "set_value_dispatch: ${{ needs.set_value_dispatch.outputs.proceed_build }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
