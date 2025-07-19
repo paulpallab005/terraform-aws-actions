@@ -1,36 +1,23 @@
 name: Set Maven
 
-# on:
-#   workflow_dispatch:
-#   push:
-#     branches:
-#       - main
-#       # - feature/IDAMDO-1438
-#       # - develop
-#       # - 'hotfix*'
-#       # - '*release*'
-#     paths:
-#       - 'terraform/**'
-#       # - 'java/iam-task-service/**'
-#       # - 'java/pom.xml'
-#       # - '.github/workflows/routing-build.yml'
-
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'terraform/**'
 
 jobs:
   filter:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       terraform_changed: ${{ steps.filter.outputs.terraform }}
-      # iam_changed: ${{ steps.filter.outputs.iam_task_service }}
-      # pom_changed: ${{ steps.filter.outputs.pom }}
-      # gh_workflow_file_changed: ${{ steps.filter.outputs.gh_workflow_file }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -39,10 +26,31 @@ jobs:
             terraform:
               - 'terraform/**'
 
-  build:
+  set_value_push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      proceed_build: ${{ steps.set_value.outputs.proceed_build }}
+    steps:
+      - name: Set Value
+        id: set_value
+        run: echo "proceed_build=true" >> $GITHUB_OUTPUT
+
+  set_value_dispatch:
+    if: github.event_name == 'workflow_dispatch' && needs.filter.outputs.terraform_changed == 'true'
     needs: filter
     runs-on: ubuntu-latest
-    if: needs.filter.outputs.terraform_changed == 'true'
+    outputs:
+      proceed_build: ${{ steps.set_value.outputs.proceed_build }}
+    steps:
+      - name: Set Value
+        id: set_value
+        run: echo "proceed_build=true" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [set_value_push, set_value_dispatch]
+    if: needs.set_value_push.outputs.proceed_build == 'true' || needs.set_value_dispatch.outputs.proceed_build == 'true'
     env:
       IAM_TASK_SERVICE: iam-task-service
       POM: pom.xml
