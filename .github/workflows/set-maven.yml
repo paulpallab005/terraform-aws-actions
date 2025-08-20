@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - main
+          - develop
 
   push:
     branches:
