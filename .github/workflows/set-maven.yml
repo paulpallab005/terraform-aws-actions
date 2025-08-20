@@ -28,7 +28,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "GITHUB_BRANCH_NAME=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
           else
-            echo "GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}" >> $GITHUB_ENV
+            echo "GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}' | sed 's|refs/heads/||')" >> $GITHUB_ENV
           fi
           echo "Git Branch to be used: ${GITHUB_BRANCH_NAME}"
 
