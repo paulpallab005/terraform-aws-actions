@@ -67,8 +67,7 @@ jobs:
       - name: Build or Deploy OpenIDM
         working-directory: terraform
         run: |
-          # BRANCH_NAME="${{ env.GITHUB_BRANCH_NAME }}"
-          case "${{ env.GITHUB_BRANCH_NAME }}" in
+          case ${{ env.GITHUB_BRANCH_NAME }} in
             develop|hotfix*|*release*)
               MVN_CMD="deploy"
               ;;
