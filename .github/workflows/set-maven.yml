@@ -19,7 +19,7 @@ on:
       - '.github/workflows/set-maven.yml'
 
 jobs:
-  idm_build:
+  maven_build:
     runs-on: ubuntu-latest
 
     steps:
@@ -64,7 +64,7 @@ jobs:
       #     ${{ secrets.MAVEN_SETTINGS_XML }}
       #     EOF
 
-      - name: Build or Deploy OpenIDM
+      - name: Build or Deploy
         working-directory: terraform
         run: |
           case ${{ env.GITHUB_BRANCH_NAME }} in
@@ -77,4 +77,4 @@ jobs:
           esac
 
           # Maven Build
-          echo "Performing Maven $MVN_CMD for branch: $BRANCH_NAME"
+          echo "Performing Maven $MVN_CMD for branch: ${{ env.GITHUB_BRANCH_NAME }}"
