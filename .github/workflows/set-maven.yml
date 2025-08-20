@@ -26,10 +26,12 @@ jobs:
       - name: Set Git Branch
         run: |
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "GITHUB_BRANCH_NAME=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
+            echo "GITHUB_BRANCH_NAME=${{ github.event.inputs.branch }}"
           else
-            echo "GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}' | sed 's|refs/heads/||')" >> $GITHUB_ENV
+            echo "GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}' | sed 's|refs/heads/||')"
           fi
+
+          echo "GITHUB_BRANCH_NAME=$GITHUB_BRANCH_NAME" >> $GITHUB_ENV
           echo "Git Branch to be used: $GITHUB_BRANCH_NAME"
 
       - name: Checkout code
@@ -64,8 +66,8 @@ jobs:
       #     EOF
 
       - name: Build or Deploy OpenIDM
+        working-directory: terraform
         run: |
-          cd java
           # BRANCH_NAME="${{ env.GITHUB_BRANCH_NAME }}"
           case "${{ env.GITHUB_BRANCH_NAME }}" in
             develop|hotfix*|*release*)
