@@ -11,12 +11,12 @@ on:
     #       - main
     #       - develop
 
-  push:
-    branches:
-      - feature/demo-2
-    paths:
-      - 'terraform/**'
-      - '.github/workflows/set-maven.yml'
+  # push:
+  #   branches:
+  #     - feature/demo-2
+  #   paths:
+  #     - 'terraform/**'
+  #     - '.github/workflows/set-maven.yml'
 
 jobs:
   maven_build:
