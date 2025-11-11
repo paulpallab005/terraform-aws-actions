@@ -2,14 +2,14 @@ name: Maven Build Test
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        type: choice
-        options:
-          - main
-          - develop
+    # inputs:
+    #   branch:
+    #     description: 'Branch to build'
+    #     required: true
+    #     type: choice
+    #     options:
+    #       - main
+    #       - develop
 
   push:
     branches:
@@ -23,58 +23,87 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set Git Branch
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            GITHUB_BRANCH_NAME="${{ github.event.inputs.branch }}"
-          else
-            GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}' | sed 's|refs/heads/||')
-          fi
-          echo "GITHUB_BRANCH_NAME=$GITHUB_BRANCH_NAME" >> $GITHUB_ENV
-          echo "Git Branch to be used: $GITHUB_BRANCH_NAME"
-
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+              uses: actions/checkout@v5
+            
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          ref: ${{ env.GITHUB_BRANCH_NAME }}
+          terraform_version: "1.10.4"
 
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-
-      # - name: Cache Maven dependencies
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.m2/repository
-      #     key: m2-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-      #     restore-keys: |
-      #       m2-${{ runner.os }}-
-
-      - name: Show environment info
+      - name: Get Terraform Path
+        shell: bash
+        id: get_tf_path
         run: |
-          export M2_HOME=$(dirname $(dirname $(readlink -f $(which mvn))))
-          echo "PATH = $PATH"
-          echo "M2_HOME = $M2_HOME"
+          tf_path=$(which terraform)
+          echo "tf_path=$tf_path" >> $GITHUB_OUTPUT
+          echo "Terraform path: $tf_path"
 
-      # - name: Write Maven settings.xml
+      - name: Install Terragrunt
+        uses: gruntwork-io/terragrunt-action@v3
+        with:
+          tg_version: "0.83.2"
+          tf_path: ${{ steps.get_tf_path.outputs.tf_path }}
+
+      - name: Display version
+        run: |
+          terraform --version
+          terragrunt --version
+
+
+        
+      # - name: Set Git Branch
       #   run: |
-      #     cat <<EOF > settings.xml
-      #     ${{ secrets.MAVEN_SETTINGS_XML }}
-      #     EOF
+      #     if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+      #       GITHUB_BRANCH_NAME="${{ github.event.inputs.branch }}"
+      #     else
+      #       GITHUB_BRANCH_NAME=$(echo '${{ github.ref }}' | sed 's|refs/heads/||')
+      #     fi
+      #     echo "GITHUB_BRANCH_NAME=$GITHUB_BRANCH_NAME" >> $GITHUB_ENV
+      #     echo "Git Branch to be used: $GITHUB_BRANCH_NAME"
 
-      - name: Build or Deploy
-        working-directory: terraform
-        run: |
-          case ${{ env.GITHUB_BRANCH_NAME }} in
-            develop|hotfix*|*release*)
-              MVN_CMD="deploy"
-              ;;
-            *)
-              MVN_CMD="install"
-              ;;
-          esac
+      # - name: Checkout code
+      #   uses: actions/checkout@v4
+      #   with:
+      #     ref: ${{ env.GITHUB_BRANCH_NAME }}
 
-          # Maven Build
-          echo "Performing Maven $MVN_CMD for branch: ${{ env.GITHUB_BRANCH_NAME }}"
+      # - name: Set up JDK 11
+      #   uses: actions/setup-java@v4
+      #   with:
+      #     distribution: 'temurin'
+      #     java-version: '11'
+
+      # # - name: Cache Maven dependencies
+      # #   uses: actions/cache@v4
+      # #   with:
+      # #     path: ~/.m2/repository
+      # #     key: m2-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+      # #     restore-keys: |
+      # #       m2-${{ runner.os }}-
+
+      # - name: Show environment info
+      #   run: |
+      #     export M2_HOME=$(dirname $(dirname $(readlink -f $(which mvn))))
+      #     echo "PATH = $PATH"
+      #     echo "M2_HOME = $M2_HOME"
+
+      # # - name: Write Maven settings.xml
+      # #   run: |
+      # #     cat <<EOF > settings.xml
+      # #     ${{ secrets.MAVEN_SETTINGS_XML }}
+      # #     EOF
+
+      # - name: Build or Deploy
+      #   working-directory: terraform
+      #   run: |
+      #     case ${{ env.GITHUB_BRANCH_NAME }} in
+      #       develop|hotfix*|*release*)
+      #         MVN_CMD="deploy"
+      #         ;;
+      #       *)
+      #         MVN_CMD="install"
+      #         ;;
+      #     esac
+
+      #     # Maven Build
+      #     echo "Performing Maven $MVN_CMD for branch: ${{ env.GITHUB_BRANCH_NAME }}"
