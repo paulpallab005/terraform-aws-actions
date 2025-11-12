@@ -1,0 +1,130 @@
+name: Terragrunt Deployment Test
+
+on:
+    workflow_dispatch:
+        inputs:
+            app_name:
+                description: 'Application'
+                required: true
+                type: choice
+                options:
+                    - am
+                    - id-app
+                    - id-search
+                    - routing
+            environment:
+                description: 'Environment'
+                required: true
+                type: choice
+                options:
+                    - dev
+                    - test
+                    - stage
+                    - ppe
+                    - prod
+            deployment:
+                description: 'Deployment'
+                required: true
+                type: choice
+                options:
+                    - blue
+                    - green
+            region:
+                description: 'Region'
+                required: true
+                type: choice
+                options:
+                    - us-east-1
+                    - eu-west-1
+                    - ap-southeast-1
+                    - ca-central-1
+                    - all
+
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    validate-details-all:
+      if: ${{ inputs.region == 'all' }}
+      runs-on: ubuntu:latest
+      outputs:
+        matrix: ${{ steps.region-matrix.outputs.matrix }}
+      steps:
+            - name: create region matrix
+              id: region-matrix
+              shell: bash
+              run: |
+                env=${{ inputs.environment }}
+                deployment=${{ inputs.deployment }}
+                if [ "$env" == "dev" ]; then
+                  if [ "$deployment" == "green" ]; then
+                    echo "Deployment '$deployment' is not applicable for 'dev' environment."
+                    exit 1
+                  fi
+                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"}]}'
+                elif [ "$env" == "test" ]; then
+                  if [ "$deployment" == "green" ]; then
+                    echo "Deployment '$deployment' is not applicable for 'test' environment."
+                    exit 1
+                  fi
+                  matrix='{"include":[{"region":"us-east-1"},{"region":"ap-southeast-1"}]}'
+                elif [ "$env" == "stage" ]; then
+                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"},{"region":"ap-southeast-1"}]}'
+                elif [ "$env" == "ppe" ] || [ "$env" == "prod" ]; then
+                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"},{"region":"ap-southeast-1"},{"region":"ca-central-1"}]}'
+                else
+                  echo "Invalid environment: $env"
+                  exit 1
+                fi
+
+                echo "matrix=$matrix" >> $GITHUB_OUTPUT
+                echo "Matrix JSON: $matrix"
+
+            # - name: Fetch AWS AccountID
+            #   shell: bash
+            #   id: fetch_aws_details
+            #   run: |
+            #     if [ "${{ inputs.environment }}" != "prod" ]; then
+            #       echo "aws_acc_id=1234567890" >> $GITHUB_OUTPUT
+            #       echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+            #     else
+            #       echo "aws_acc_id=0987654321" >> $GITHUB_OUTPUT
+            #       echo "aws_acc=prod" >> $GITHUB_OUTPUT
+            #     fi
+
+    terragrunt_plan_all:
+      needs: validate-details-all
+      runs-on: ubuntu:latest
+      strategy:
+        matrix: ${{ fromJson(needs.validate-details-all.outputs.matrix) }}
+      steps:
+          - name: Checkout repository
+            uses: actions/checkout@v5
+          
+          - name: Setup Terraform
+            uses: hashicorp/setup-terraform@v3
+            with:
+              terraform_version: "1.10.4"
+
+          - name: Get Terraform Path
+            shell: bash
+            id: get_tf_path
+            run: |
+              tf_path=$(which terraform)
+              echo "tf_path=$tf_path" >> $GITHUB_OUTPUT
+              echo "Terraform path: $tf_path"
+
+          - name: Install Terragrunt
+            uses: gruntwork-io/terragrunt-action@v3
+            with:
+              tg_version: "0.83.2"
+              tf_path: ${{ steps.get_tf_path.outputs.tf_path }}
+
+          - name: Terragrunt Plan
+            # working-directory: "${{ needs.validate-details-all.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
+            run: |
+              echo "Starting Terragrunt Plan..."
+              echo "Path: ${{ needs.validate-details-all.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
+              # terragrunt run-all plan
