@@ -130,8 +130,4 @@ jobs:
             run: |
               echo "Starting Terragrunt Plan..."
               echo "Path: ${{ needs.validate-details-all.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
-              if [ ${{ matrix.region }} == 'us-east-1' ]; then
-                echo "Failing the build"
-                exit 1
-              fi
               # terragrunt run-all plan
