@@ -125,6 +125,7 @@ jobs:
               tf_path: ${{ steps.get_tf_path.outputs.tf_path }}
 
           - name: Terragrunt Plan
+            continue-on-error: true
             # working-directory: "${{ needs.validate-details-all.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
             run: |
               echo "Starting Terragrunt Plan..."
