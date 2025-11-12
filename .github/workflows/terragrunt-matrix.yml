@@ -48,7 +48,7 @@ permissions:
 jobs:
     validate-details-all:
       if: ${{ inputs.region == 'all' }}
-      runs-on: ubuntu:latest
+      runs-on: ubuntu-latest
       outputs:
         matrix: ${{ steps.region-matrix.outputs.matrix }}
       steps:
@@ -96,7 +96,7 @@ jobs:
 
     terragrunt_plan_all:
       needs: validate-details-all
-      runs-on: ubuntu:latest
+      runs-on: ubuntu-latest
       strategy:
         matrix: ${{ fromJson(needs.validate-details-all.outputs.matrix) }}
       steps:
