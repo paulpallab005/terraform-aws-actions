@@ -51,6 +51,8 @@ jobs:
       runs-on: ubuntu-latest
       outputs:
         matrix: ${{ steps.region-matrix.outputs.matrix }}
+        aws_acc_id: ${{ steps.fetch_aws_details.outputs.aws_acc_id }}
+        aws_acc: ${{ steps.fetch_aws_details.outputs.aws_acc }}
       steps:
             - name: create region matrix
               id: region-matrix
@@ -82,17 +84,17 @@ jobs:
                 echo "matrix=$matrix" >> $GITHUB_OUTPUT
                 echo "Matrix JSON: $matrix"
 
-            # - name: Fetch AWS AccountID
-            #   shell: bash
-            #   id: fetch_aws_details
-            #   run: |
-            #     if [ "${{ inputs.environment }}" != "prod" ]; then
-            #       echo "aws_acc_id=1234567890" >> $GITHUB_OUTPUT
-            #       echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
-            #     else
-            #       echo "aws_acc_id=0987654321" >> $GITHUB_OUTPUT
-            #       echo "aws_acc=prod" >> $GITHUB_OUTPUT
-            #     fi
+            - name: Fetch AWS AccountID
+              shell: bash
+              id: fetch_aws_details
+              run: |
+                if [ "${{ inputs.environment }}" != "prod" ]; then
+                  echo "aws_acc_id=1234567890" >> $GITHUB_OUTPUT
+                  echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+                else
+                  echo "aws_acc_id=0987654321" >> $GITHUB_OUTPUT
+                  echo "aws_acc=prod" >> $GITHUB_OUTPUT
+                fi
 
     terragrunt_plan_all:
       needs: validate-details-all
