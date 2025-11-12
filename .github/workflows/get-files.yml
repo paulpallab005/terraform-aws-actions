@@ -1,44 +1,49 @@
-    name: Get Changed Files on Push
+name: Get Changed Files on Push
 
-    on:
-      push:
-        branches:
-          - develop
-        path:
-          - "**/*.tf"
+on:
+  push:
+    branches:
+      - develop
+    paths:  # Fixed: was 'path', should be 'paths'
+      - "**/*.tf"
 
-    jobs:
-      detect_changes:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout repository
-            uses: actions/checkout@v4
-            with:
-              fetch-depth: 0
+jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-          - name: Get changed files
-            id: changed-files
-            run: |
-              CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '\.tf$' || true)
-              
-              if [ -z "$CHANGED_FILES" ]; then
-                echo "No .tf files changed"
-                echo "has_changes=false" >> $GITHUB_OUTPUT
-                exit 0
-              fi
-              
-              echo "has_changes=true" >> $GITHUB_OUTPUT
-              
-              # Extract unique directories
-              dirs=$(echo "$CHANGED_FILES" | xargs -I {} dirname {} | sort -u)
-              
-              # Convert to JSON array
-              dirs_json=$(echo "$dirs" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-              echo "changed_dirs=${dirs_json}" >> $GITHUB_OUTPUT
-              echo "Changed directories: $dirs_json"
+      - name: Get changed files
+        id: changed-files
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '\.tf$' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No .tf files changed"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          
+          # Extract unique directories
+          dirs=$(echo "$CHANGED_FILES" | xargs -I {} dirname {} | sort -u)
+          
+          # Convert to JSON array
+          dirs_json=$(echo "$dirs" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "changed_dirs=${dirs_json}" >> $GITHUB_OUTPUT
+          echo "Changed directories: $dirs_json"
 
-          - name: Process changed directories
-            if: steps.changed-files.outputs.has_changes == 'true'
-            run: |
-              echo '${{ steps.changed-files.outputs.changed_dirs }}' | jq -r '.[]' | while read -r dir; do
-                echo "Running Terragrunt plan in: $dir"
+      - name: Process changed directories
+        if: steps.changed-files.outputs.has_changes == 'true'
+        run: |
+          echo '${{ steps.changed-files.outputs.changed_dirs }}' | jq -r '.[]' | while read -r dir; do
+            echo "Running Terragrunt plan in: $dir"
+            # Add your Terragrunt commands here
+            # cd "$dir"
+            # terragrunt run-all plan --terragrunt-non-interactive
+            # cd -
+          done
