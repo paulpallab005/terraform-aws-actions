@@ -65,17 +65,17 @@ jobs:
                     echo "Deployment '$deployment' is not applicable for 'dev' environment."
                     exit 1
                   fi
-                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"}]}'
+                  matrix='{"region":["us-east-1","eu-west-1"]}'
                 elif [ "$env" == "test" ]; then
                   if [ "$deployment" == "green" ]; then
                     echo "Deployment '$deployment' is not applicable for 'test' environment."
                     exit 1
                   fi
-                  matrix='{"include":[{"region":"us-east-1"},{"region":"ap-southeast-1"}]}'
+                  matrix='{"region":["us-east-1","ap-southeast-1"]}'
                 elif [ "$env" == "stage" ]; then
-                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"},{"region":"ap-southeast-1"}]}'
+                  matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1"]}'
                 elif [ "$env" == "ppe" ] || [ "$env" == "prod" ]; then
-                  matrix='{"include":[{"region":"us-east-1"},{"region":"eu-west-1"},{"region":"ap-southeast-1"},{"region":"ca-central-1"}]}'
+                  matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1","ca-central-1"]}'
                 else
                   echo "Invalid environment: $env"
                   exit 1
