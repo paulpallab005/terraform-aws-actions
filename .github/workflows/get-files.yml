@@ -1,0 +1,32 @@
+    name: Get Changed Files on Push
+
+    on:
+      push:
+        branches:
+          - develop
+        path:
+          - "**/*.tf"
+
+    jobs:
+      detect_changes:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v4
+            with:
+              fetch-depth: 0
+
+          - name: Get changed files
+            id: changed-files
+            run: |
+              # Get the list of changed files between the current and previous commit
+              # For a push, github.event.before is the commit before the push
+              # and github.event.after is the commit that was pushed.
+              # If there are multiple commits in the push, this will compare the first and last.
+              CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+              echo "changed_files=${CHANGED_FILES}" >> $GITHUB_OUTPUT
+
+          - name: List changed files
+            run: |
+              echo "The following files were changed:"
+              echo "${{ steps.changed-files.outputs.changed_files }}"
