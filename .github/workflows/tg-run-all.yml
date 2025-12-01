@@ -188,6 +188,7 @@ jobs:
 
 
   terragrunt_apply:
+      if: ${{ inputs.region != 'all-regions' }}
       needs: [validate-details, terragrunt_plan]
       runs-on: ubuntu-latest
       steps:
@@ -344,6 +345,7 @@ jobs:
             echo "Starting Terragrunt Plan for all Web Apps... \nworking-directory: ${{ needs.validate-details.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
 
   terragrunt_apply_all:
+    if: ${{ inputs.region == 'all-regions' }}
     needs: [validate-details, terragrunt_plan_all]
     runs-on: ubuntu-latest
     strategy:
