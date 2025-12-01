@@ -1,0 +1,380 @@
+name: Web App Deployment
+
+concurrency:
+  group: Web App Deployment
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'Application'
+        required: true
+        type: choice
+        options:
+            - am
+            - id-app
+            - id-search
+            - routing
+            - ds-config
+      environment:
+        description: 'Environment'
+        required: true
+        type: choice
+        options:
+            - dev
+            - test
+            - stage
+            - ppe
+            - prod
+      deployment:
+        description: 'Deployment'
+        required: true
+        type: choice
+        options:
+            - blue
+            - green
+      region:
+        description: 'Region'
+        required: true
+        type: choice
+        options:
+            - us-east-1
+            - eu-west-1
+            - ap-southeast-1
+            - ca-central-1
+            - all-regions
+
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate-details:
+      runs-on: ubuntu-latest
+      outputs:
+          tf_version: ${{ steps.set_tf_tg_versions.outputs.tf_version }}
+          tg_version: ${{ steps.set_tf_tg_versions.outputs.tg_version }}
+          work_dir: ${{ steps.validate_inputs.outputs.work_dir }}
+          aws_acc: ${{ steps.validate_inputs.outputs.aws_acc }}
+          matrix: ${{ steps.validate_inputs.outputs.matrix }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v5
+
+        - name: Validate Input Details
+          id: validate_inputs
+          shell: bash
+          run: |
+            ENVIRONMENT=${{ inputs.environment }}
+            DEPLOYMENT=${{ inputs.deployment }}
+            REGION=${{ inputs.region }}
+
+            if [ "${{ inputs.region }}" != "all-regions" ]; then
+                if [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
+                    echo "Validation not required for 'ppe' or 'prod' environments."
+                    echo "Skipping validation..."
+                else
+                    echo "Proceeding with validation for environment: $ENVIRONMENT, deployment: $DEPLOYMENT, region: $REGION"
+                    chmod +x .github/scripts/validate_env_deploy.sh
+                    ./.github/scripts/validate_env_deploy.sh "$ENVIRONMENT" "$DEPLOYMENT" "$REGION"
+                fi
+
+                if [ "${{ inputs.environment }}" == "prod" ]; then
+                    ENVIRONMENT="prod"
+                    echo "aws_acc=prod" >> $GITHUB_OUTPUT
+                else
+                    ENVIRONMENT="nonprod"
+                    echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+                fi
+
+                if [ "${{ inputs.app_name }}" == "ds-config" ]; then
+                    WORK_DIR="${ENVIRONMENT}/${{ inputs.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/ec2/${{ inputs.app_name }}"
+                else
+                    WORK_DIR="${ENVIRONMENT}/${{ inputs.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
+                fi
+                echo "work_dir=$WORK_DIR" >> $GITHUB_OUTPUT
+            else
+                if [ "${{ inputs.app_name }}" == "ds-config" ]; then
+                    echo "Application 'ds-config' is not supported for all-regions deployment."
+                    exit 1
+                fi
+
+                if [ "$ENVIRONMENT" == "dev" ]; then
+                    if [ "$DEPLOYMENT" == "green" ]; then
+                        echo "Deployment '$DEPLOYMENT' is not applicable for 'dev' environment."
+                        exit 1
+                    fi
+                    matrix='{"region":["us-east-1","eu-west-1"]}'
+                elif [ "$ENVIRONMENT" == "test" ]; then
+                    if [ "$DEPLOYMENT" == "green" ]; then
+                        echo "Deployment '$DEPLOYMENT' is not applicable for 'test' environment."
+                        exit 1
+                    fi
+                    matrix='{"region":["us-east-1","ap-southeast-1"]}'
+                elif [ "$ENVIRONMENT" == "stage" ]; then
+                    matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1"]}'
+                elif [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
+                    matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1","ca-central-1"]}'
+                else
+                    echo "Invalid environment: $ENVIRONMENT"
+                    exit 1
+                fi
+            fi
+
+        - name: Write Inputs to GitHub Summary
+          run: |
+            echo "# WebApp Deployment Configuration" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| App Name | ${{ inputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Deployment | ${{ inputs.deployment }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Region | ${{ inputs.region }} |" >> $GITHUB_STEP_SUMMARY
+
+        - name: Set TF / TG Versions
+          id: set_tf_tg_versions
+          shell: bash
+          run: |
+            # Set Terraform version
+            if [ -f ".terraform-version" ]; then
+              TF_VER=$(cat .terraform-version)
+              echo "tf_version=${TF_VER}" >> $GITHUB_OUTPUT
+            fi
+
+            # Set Terragrunt version
+            if [ -f ".terragrunt-version" ]; then
+              TG_VER=$(cat .terragrunt-version)
+              echo "tg_version=${TG_VER}" >> $GITHUB_OUTPUT
+            fi
+
+  terragrunt_plan:
+      needs: validate-details
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v5
+
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: ${{ needs.validate-details.outputs.tf_version }}
+
+        - name: Set up Terragrunt
+          shell: bash
+          run: |
+            TG_VERSION="${{ needs.validate-details.outputs.tg_version }}"
+            
+            echo "Installing Terragrunt ${TG_VERSION}..."
+            
+            # Download Terragrunt
+            TG_URL="https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+            
+            wget -q "${TG_URL}" -O /tmp/terragrunt
+            
+            # Make executable and move to PATH
+            chmod +x /tmp/terragrunt
+            mv /tmp/terragrunt /usr/local/bin/terragrunt
+            
+            echo "Terragrunt ${TG_VERSION} installed successfully"
+            terragrunt --version
+
+        - name: Terragrunt Plan
+          run: |
+            echo "Starting Terragrunt Plan...\n working-directory: ${{ needs.validate-details.outputs.work_dir }}"
+
+
+  terragrunt_apply:
+      needs: [validate-details, terragrunt_plan]
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v5
+        
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: ${{ needs.validate-details.outputs.tf_version }}
+
+        - name: Set up Terragrunt
+          shell: bash
+          run: |
+            TG_VERSION="${{ needs.validate-details.outputs.tg_version }}"
+            
+            echo "Installing Terragrunt ${TG_VERSION}..."
+            
+            # Download Terragrunt
+            TG_URL="https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+            
+            wget -q "${TG_URL}" -O /tmp/terragrunt
+            
+            # Make executable and move to PATH
+            chmod +x /tmp/terragrunt
+            mv /tmp/terragrunt /usr/local/bin/terragrunt
+            
+            echo "Terragrunt ${TG_VERSION} installed successfully"
+            terragrunt --version
+
+        - name: Terragrunt Apply
+          run: |
+            echo "Starting Terragrunt Apply...\n working-directory: ${{ needs.validate-details.outputs.work_dir }}"
+
+#   validate-details-all:
+#     if: ${{ inputs.region == 'all-regions' }}
+#     runs-on: [pearson-build]
+#     container:
+#       image: ubuntu:latest
+#     outputs:
+#       matrix: ${{ steps.region-matrix.outputs.matrix }}
+#       tf_version: ${{ steps.set_tf_tg_versions.outputs.tf_version }}
+#       tg_version: ${{ steps.set_tf_tg_versions.outputs.tg_version }}
+#       aws_acc_id: ${{ steps.fetch_aws_details.outputs.aws_acc_id }}
+#       aws_acc: ${{ steps.fetch_aws_details.outputs.aws_acc }}
+#     steps:
+#         - name: Checkout repository
+#           uses: actions/checkout@v5
+
+#         - name: create region matrix
+#           id: region-matrix
+#           shell: bash
+#           run: |
+#             ENVIRONMENT=${{ inputs.environment }}
+#             DEPLOYMENT=${{ inputs.deployment }}
+#             if [ "${{ inputs.app_name }}" == "ds-config" ]; then
+#               echo "Application 'ds-config' is not supported for all-regions deployment."
+#               exit 1
+#             fi
+
+#             if [ "$ENVIRONMENT" == "dev" ]; then
+#               if [ "$DEPLOYMENT" == "green" ]; then
+#                 echo "Deployment '$DEPLOYMENT' is not applicable for 'dev' environment."
+#                 exit 1
+#               fi
+#               matrix='{"region":["us-east-1","eu-west-1"]}'
+#             elif [ "$ENVIRONMENT" == "test" ]; then
+#               if [ "$DEPLOYMENT" == "green" ]; then
+#                 echo "Deployment '$DEPLOYMENT' is not applicable for 'test' environment."
+#                 exit 1
+#               fi
+#               matrix='{"region":["us-east-1","ap-southeast-1"]}'
+#             elif [ "$ENVIRONMENT" == "stage" ]; then
+#               matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1"]}'
+#             elif [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
+#               matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1","ca-central-1"]}'
+#             else
+#               echo "Invalid environment: $ENVIRONMENT"
+#               exit 1
+#             fi
+
+#             echo "matrix=$matrix" >> $GITHUB_OUTPUT
+#             echo "Matrix JSON: $matrix"
+
+#         - name: Set TF / TG Versions
+#           id: set_tf_tg_versions
+#           shell: bash
+#           run: |
+#             # Set Terraform version
+#             if [ -f ".terraform-version" ]; then
+#               TF_VER=$(cat .terraform-version)
+#               echo "tf_version=${TF_VER}" >> $GITHUB_OUTPUT
+#             else
+#               echo "tf_version=" >> $GITHUB_OUTPUT
+#             fi
+
+#             # Set Terragrunt version
+#             if [ -f ".terragrunt-version" ]; then
+#               TG_VER=$(cat .terragrunt-version)
+#               echo "tg_version=${TG_VER}" >> $GITHUB_OUTPUT
+#             else
+#               echo "tg_version=" >> $GITHUB_OUTPUT
+#             fi
+
+#         - name: Fetch AWS AccountID
+#           shell: bash
+#           id: fetch_aws_details
+#           run: |
+#             if [ "${{ inputs.environment }}" != "prod" ]; then
+#               echo "aws_acc_id=${{ vars.AWS_NONPROD_ACC_ID }}" >> $GITHUB_OUTPUT
+#               echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+#             else
+#               echo "aws_acc_id=${{ vars.AWS_PROD_ACC_ID }}" >> $GITHUB_OUTPUT
+#               echo "aws_acc=prod" >> $GITHUB_OUTPUT
+#             fi
+
+  terragrunt_plan_all:
+    needs: validate-details
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.validate-details.outputs.matrix) }}
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v5
+        
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: ${{ needs.validate-details.outputs.tf_version }}
+
+        - name: Set up Terragrunt
+          shell: bash
+          run: |
+            TG_VERSION="${{ needs.validate-details.outputs.tg_version }}"
+            
+            echo "Installing Terragrunt ${TG_VERSION}..."
+            
+            # Download Terragrunt
+            TG_URL="https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+            
+            wget -q "${TG_URL}" -O /tmp/terragrunt
+            
+            # Make executable and move to PATH
+            chmod +x /tmp/terragrunt
+            mv /tmp/terragrunt /usr/local/bin/terragrunt
+            
+            echo "Terragrunt ${TG_VERSION} installed successfully"
+            terragrunt --version
+
+        - name: Terragrunt Plan
+          run: |
+            echo "Starting Terragrunt Plan for all Web Apps... \nworking-directory: ${{ needs.validate-details.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
+
+  terragrunt_apply_all:
+    needs: [validate-details, terragrunt_plan_all]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.validate-details.outputs.matrix) }}
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v5
+        
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: ${{ needs.validate-details.outputs.tf_version }}
+
+        - name: Set up Terragrunt
+          shell: bash
+          run: |
+            TG_VERSION="${{ needs.validate-details.outputs.tg_version }}"
+            
+            echo "Installing Terragrunt ${TG_VERSION}..."
+            
+            # Download Terragrunt
+            TG_URL="https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+            
+            wget -q "${TG_URL}" -O /tmp/terragrunt
+            
+            # Make executable and move to PATH
+            chmod +x /tmp/terragrunt
+            mv /tmp/terragrunt /usr/local/bin/terragrunt
+            
+            echo "Terragrunt ${TG_VERSION} installed successfully"
+            terragrunt --version
+
+        - name: Terragrunt Apply
+          run: |
+            echo "Starting Terragrunt Apply for all Web Apps...\n working-directory: ${{ needs.validate-details.outputs.aws_acc }}/${{ matrix.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/autoscaling/${{ inputs.app_name }}"
