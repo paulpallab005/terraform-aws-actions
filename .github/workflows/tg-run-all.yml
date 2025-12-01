@@ -70,6 +70,11 @@ jobs:
             ENVIRONMENT=${{ inputs.environment }}
             DEPLOYMENT=${{ inputs.deployment }}
             REGION=${{ inputs.region }}
+            if [ "${{ inputs.environment }}" == "prod" ]; then
+                echo "aws_acc=prod" >> $GITHUB_OUTPUT
+            else
+                echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+            fi
 
             if [ "${{ inputs.region }}" != "all-regions" ]; then
                 if [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
@@ -116,14 +121,6 @@ jobs:
                 echo "matrix=$matrix" >> $GITHUB_OUTPUT
                 echo "Matrix JSON: $matrix"
             fi
-            
-            if [ "${{ inputs.environment }}" == "prod" ]; then
-                    ENVIRONMENT="prod"
-                    echo "aws_acc=prod" >> $GITHUB_OUTPUT
-                else
-                    ENVIRONMENT="nonprod"
-                    echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
-                fi
 
         - name: Write Inputs to GitHub Summary
           run: |
