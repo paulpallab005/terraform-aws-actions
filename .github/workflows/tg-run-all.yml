@@ -71,19 +71,21 @@ jobs:
             DEPLOYMENT=${{ inputs.deployment }}
             REGION=${{ inputs.region }}
             if [ "${{ inputs.environment }}" == "prod" ]; then
+                ENVIRONMENT="prod"
                 echo "aws_acc=prod" >> $GITHUB_OUTPUT
             else
+                ENVIRONMENT="nonprod"
                 echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
             fi
 
             if [ "${{ inputs.region }}" != "all-regions" ]; then
-                if [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
+                if [ "${{ inputs.environment }}" == "ppe" ] || [ "${{ inputs.environment }}" == "prod" ]; then
                     echo "Validation not required for 'ppe' or 'prod' environments."
                     echo "Skipping validation..."
                 else
-                    echo "Proceeding with validation for environment: $ENVIRONMENT, deployment: $DEPLOYMENT, region: $REGION"
+                    echo "Proceeding with validation for environment: ${{ inputs.environment }}, deployment: $DEPLOYMENT, region: $REGION"
                     chmod +x .github/scripts/validate_env_deploy.sh
-                    ./.github/scripts/validate_env_deploy.sh "$ENVIRONMENT" "$DEPLOYMENT" "$REGION"
+                    ./.github/scripts/validate_env_deploy.sh "${{ inputs.environment }}" "$DEPLOYMENT" "$REGION"
                 fi
 
                 if [ "${{ inputs.app_name }}" == "ds-config" ]; then
