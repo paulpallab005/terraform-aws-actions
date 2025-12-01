@@ -60,6 +60,17 @@ jobs:
           aws_acc: ${{ steps.validate_inputs.outputs.aws_acc }}
           matrix: ${{ steps.validate_inputs.outputs.matrix }}
       steps:
+        - name: Write Inputs to GitHub Summary
+          run: |
+            echo "# WebApp Deployment Configuration" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| App Name | ${{ inputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Deployment | ${{ inputs.deployment }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Region | ${{ inputs.region }} |" >> $GITHUB_STEP_SUMMARY
+
         - name: Checkout
           uses: actions/checkout@v5
 
@@ -99,40 +110,29 @@ jobs:
                     exit 1
                 fi
 
-                if [ "$ENVIRONMENT" == "dev" ]; then
+                if [ "${{ inputs.environment }}" == "dev" ]; then
                     if [ "$DEPLOYMENT" == "green" ]; then
                         echo "Deployment '$DEPLOYMENT' is not applicable for 'dev' environment."
                         exit 1
                     fi
                     matrix='{"region":["us-east-1","eu-west-1"]}'
-                elif [ "$ENVIRONMENT" == "test" ]; then
+                elif [ "${{ inputs.environment }}" == "test" ]; then
                     if [ "$DEPLOYMENT" == "green" ]; then
                         echo "Deployment '$DEPLOYMENT' is not applicable for 'test' environment."
                         exit 1
                     fi
                     matrix='{"region":["us-east-1","ap-southeast-1"]}'
-                elif [ "$ENVIRONMENT" == "stage" ]; then
+                elif [ "${{ inputs.environment }}" == "stage" ]; then
                     matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1"]}'
-                elif [ "$ENVIRONMENT" == "ppe" ] || [ "$ENVIRONMENT" == "prod" ]; then
+                elif [ "${{ inputs.environment }}" == "ppe" ] || [ "${{ inputs.environment }}" == "prod" ]; then
                     matrix='{"region":["us-east-1","eu-west-1","ap-southeast-1","ca-central-1"]}'
                 else
-                    echo "Invalid environment: $ENVIRONMENT"
+                    echo "Invalid environment: ${{ inputs.environment }}"
                     exit 1
                 fi
                 echo "matrix=$matrix" >> $GITHUB_OUTPUT
                 echo "Matrix JSON: $matrix"
             fi
-
-        - name: Write Inputs to GitHub Summary
-          run: |
-            echo "# WebApp Deployment Configuration" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
-            echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| App Name | ${{ inputs.app_name }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Deployment | ${{ inputs.deployment }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Region | ${{ inputs.region }} |" >> $GITHUB_STEP_SUMMARY
 
         - name: Set TF / TG Versions
           id: set_tf_tg_versions
