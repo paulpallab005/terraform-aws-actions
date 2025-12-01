@@ -151,6 +151,7 @@ jobs:
             fi
 
   terragrunt_plan:
+      if: ${{ inputs.region != 'all-regions' }}
       needs: validate-details
       runs-on: ubuntu-latest
       steps:
