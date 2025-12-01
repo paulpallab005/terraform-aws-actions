@@ -121,6 +121,8 @@ jobs:
                     echo "Invalid environment: $ENVIRONMENT"
                     exit 1
                 fi
+                echo "matrix=$matrix" >> $GITHUB_OUTPUT
+                echo "Matrix JSON: $matrix"
             fi
 
         - name: Write Inputs to GitHub Summary
