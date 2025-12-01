@@ -67,7 +67,6 @@ jobs:
           id: validate_inputs
           shell: bash
           run: |
-            ENVIRONMENT=${{ inputs.environment }}
             DEPLOYMENT=${{ inputs.deployment }}
             REGION=${{ inputs.region }}
             if [ "${{ inputs.environment }}" == "prod" ]; then
