@@ -81,14 +81,6 @@ jobs:
                     ./.github/scripts/validate_env_deploy.sh "$ENVIRONMENT" "$DEPLOYMENT" "$REGION"
                 fi
 
-                if [ "${{ inputs.environment }}" == "prod" ]; then
-                    ENVIRONMENT="prod"
-                    echo "aws_acc=prod" >> $GITHUB_OUTPUT
-                else
-                    ENVIRONMENT="nonprod"
-                    echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
-                fi
-
                 if [ "${{ inputs.app_name }}" == "ds-config" ]; then
                     WORK_DIR="${ENVIRONMENT}/${{ inputs.region }}/${{ inputs.environment }}/${{ inputs.deployment }}/ec2/${{ inputs.app_name }}"
                 else
@@ -124,6 +116,14 @@ jobs:
                 echo "matrix=$matrix" >> $GITHUB_OUTPUT
                 echo "Matrix JSON: $matrix"
             fi
+            
+            if [ "${{ inputs.environment }}" == "prod" ]; then
+                    ENVIRONMENT="prod"
+                    echo "aws_acc=prod" >> $GITHUB_OUTPUT
+                else
+                    ENVIRONMENT="nonprod"
+                    echo "aws_acc=nonprod" >> $GITHUB_OUTPUT
+                fi
 
         - name: Write Inputs to GitHub Summary
           run: |
