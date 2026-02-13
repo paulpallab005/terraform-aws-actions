@@ -41,9 +41,9 @@ jobs:
     name: "Promote AMI"
 
     steps:
-        - name: Install dependencies
-          run: |
-            apk add --no-cache bash jq git aws-cli
+        # - name: Install dependencies
+        #   run: |
+        #     apk add --no-cache bash jq git aws-cli
 
         - name: Summarize inputs in GitHub Step Summary
           run: |
