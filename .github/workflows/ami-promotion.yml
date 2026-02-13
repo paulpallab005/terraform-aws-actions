@@ -53,7 +53,7 @@ jobs:
             echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
             echo "| AMI Name | ${{ github.event.inputs.component }} |" >> $GITHUB_STEP_SUMMARY
             echo "| Environment Promotion | ${{ github.event.inputs.aws_env }} |" >> $GITHUB_STEP_SUMMARY
-            if [[ "${{ github.event.inputs.component }}" != "ds-db" || "${{ github.event.inputs.component }}" != "ds-cts" ]]; then
+            if [[ "${{ github.event.inputs.component }}" != "ds-db" && "${{ github.event.inputs.component }}" != "ds-cts" ]]; then
                 echo "| Deployment Type | ${{ github.event.inputs.deployment }} |" >> $GITHUB_STEP_SUMMARY
             fi
 
