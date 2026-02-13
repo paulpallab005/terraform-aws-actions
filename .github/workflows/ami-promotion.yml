@@ -1,0 +1,66 @@
+name: Promote AMI
+on: 
+    workflow_dispatch:
+        inputs:
+            ami:
+                description: 'AMI Name'
+                required: true
+                type: choice
+                options:
+                  - ds-db
+                  - ds-cts
+                  - ds-config
+                  - openam
+                  - openidm
+                  - springboot
+            env:
+                description: 'Environment promotion'
+                required: true
+                type: choice
+                options:
+                - DEV > TEST
+                - TEST > STAGE
+                - STAGE > PPE
+            deployment:
+                description: 'Deployment color (e.g. blue_to_blue)'
+                required: false
+                type: choice
+                options:
+                - blue > blue
+                - blue > green
+                - green > blue
+                - green > green
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  promote-ami:
+    runs-on: ubuntu-latest
+    name: "Promote AMI"
+
+    steps:
+        - name: Install dependencies
+          run: |
+            apk add --no-cache bash jq git aws-cli
+
+        - name: Summarize inputs in GitHub Step Summary
+          run: |
+            echo "## AMI Promotion inputs Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Key | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| AMI Name | ${{ github.event.inputs.ami }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Environment Promotion | ${{ github.event.inputs.env }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Deployment Type | ${{ github.event.inputs.deployment }} |" >> $GITHUB_STEP_SUMMARY
+
+        - name: Verify inputs
+          if: github.event.inputs.env == 'DEV > TEST'
+          run: |
+            if [[ "${{ github.event.inputs.deployment }}" != "blue > blue" ]]; then
+                echo "Invalid deployment for DEV > TEST promotion. Must be blue > blue."
+                exit 1
+            else
+                echo "Inputs are valid for DEV > TEST promotion."
+            fi
